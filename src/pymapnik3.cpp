@@ -591,6 +591,13 @@ Layer_set_datasource(MapnikLayer *self, PyObject *arg)
 }
 
 static PyObject *
+Layer_get_srs(MapnikLayer *self, PyObject *Py_UNUSED(ignored))
+{
+    const char* c_srs = self->layer->srs().c_str();
+    return Py_BuildValue("s", c_srs);
+}
+
+static PyObject *
 Layer_set_srs(MapnikLayer *self, PyObject* args)
 {
     char *c_srs;
@@ -604,6 +611,9 @@ Layer_set_srs(MapnikLayer *self, PyObject* args)
 static PyMethodDef Layer_methods[] = {
     {"add_style", (PyCFunction) Layer_add_style, METH_VARARGS,
      "Add style by reference"
+    },
+    {"get_srs", (PyCFunction) Layer_get_srs, METH_NOARGS,
+     "Get projection"
     },
     {"set_datasource", (PyCFunction) Layer_set_datasource, METH_O,
      "Add underlying data source"
@@ -703,6 +713,13 @@ Map_set_background(MapnikMap *self, PyObject *color)
 }
 
 static PyObject *
+Map_get_srs(MapnikMap *self, PyObject *Py_UNUSED(ignored))
+{
+    const char* c_srs = self->map->srs().c_str();
+    return Py_BuildValue("s", c_srs);
+}
+
+static PyObject *
 Map_set_srs(MapnikMap *self, PyObject* args)
 {
     char *c_srs;
@@ -727,6 +744,9 @@ static PyMethodDef Map_methods[] = {
     },
     {"add_style", (PyCFunction) Map_add_style, METH_VARARGS,
      "Add a named style to the map"
+    },
+    {"get_srs", (PyCFunction) Map_get_srs, METH_NOARGS,
+     "Return the map's projection"
     },
     {"set_background", (PyCFunction) Map_set_background, METH_O,
      "Set background color for the map"
