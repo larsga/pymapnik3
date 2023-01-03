@@ -403,6 +403,95 @@ static PyTypeObject PolygonSymbolizerType = {
 
 
 // ===========================================================================
+// POINT SYMBOLIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::point_symbolizer *symbolizer;
+} MapnikPointSymbolizer;
+
+static void
+PointSymbolizer_dealloc(MapnikPointSymbolizer *self)
+{
+    delete self->symbolizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+PointSymbolizer_init(MapnikPointSymbolizer *self, PyObject *args)
+{
+    self->symbolizer = new mapnik::point_symbolizer();
+    return 0;
+}
+
+static PyMemberDef PointSymbolizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+PointSymbolizer_set_file(MapnikPointSymbolizer *self, PyObject *args)
+{
+    char* c_file;
+    if (!PyArg_ParseTuple(args, "s", &c_file))
+        return NULL;
+    
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, std::string>(mapnik::keys::file, std::string(c_file)));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+PointSymbolizer_set_allow_overlap(MapnikPointSymbolizer *self, PyObject *args)
+{
+    int v;
+    if (!PyArg_ParseTuple(args, "p", &v))
+        return NULL;
+
+    bool cppv = v == 1;
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, bool>(mapnik::keys::allow_overlap, cppv));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+PointSymbolizer_set_ignore_placement(MapnikPointSymbolizer *self, PyObject *args)
+{
+    int v;
+    if (!PyArg_ParseTuple(args, "p", &v))
+        return NULL;
+
+    bool cppv = v == 1;
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, bool>(mapnik::keys::ignore_placement, cppv));
+    return Py_BuildValue("");
+}
+
+static PyMethodDef PointSymbolizer_methods[] = {
+    {"set_file", (PyCFunction) PointSymbolizer_set_file, METH_VARARGS,
+     "Set SVG icon file"
+    },
+    {"set_allow_overlap", (PyCFunction) PointSymbolizer_set_allow_overlap, METH_VARARGS,
+     "Set whether to allow overlap"
+    },
+    {"set_ignore_placement", (PyCFunction) PointSymbolizer_set_ignore_placement, METH_VARARGS,
+     "Set whether to ignore placement"
+    },
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject PointSymbolizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.PointSymbolizer",
+    .tp_doc = PyDoc_STR("PointSymbolizer objects"),
+    .tp_basicsize = sizeof(MapnikPointSymbolizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) PointSymbolizer_init,
+    .tp_dealloc = (destructor) PointSymbolizer_dealloc,
+    .tp_members = PointSymbolizer_members,
+    .tp_methods = PointSymbolizer_methods,    
+};
+
+
+// ===========================================================================
 // PROJECTION
 
 typedef struct {
@@ -574,15 +663,37 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
     } else if (PyObject_IsInstance(symbolizer, (PyObject*) &LineSymbolizerType)) {
         MapnikLineSymbolizer* oursymb = (MapnikLineSymbolizer*) symbolizer;
         self->rule->append(*oursymb->symbolizer);
+    } else if (PyObject_IsInstance(symbolizer, (PyObject*) &PointSymbolizerType)) {
+        MapnikPointSymbolizer* oursymb = (MapnikPointSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "add_symbolizer requires a symbolizer object");
     }
     return Py_BuildValue("");    
 }
 
+static PyObject *
+Rule_set_filter(MapnikRule *self, PyObject *arg)
+{
+    if (!PyObject_IsInstance(arg, (PyObject*) &ExpressionType)) {
+        PyErr_SetString(PyExc_RuntimeError, "set_filter requires an expression object");
+        return Py_BuildValue("");
+    }
+
+    // MapnikExpression* expr = (MapnikExpression*) arg;
+
+    // FIXME: this line causes linking problems -- will deal with later
+    //self->rule->set_filter(expr->expression);
+    
+    return Py_BuildValue("");
+}
+
 static PyMethodDef Rule_methods[] = {
     {"add_symbolizer", (PyCFunction) Rule_add_symbolizer, METH_O,
      "Add a symbolizer to the rule"
+    },
+    {"set_filter", (PyCFunction) Rule_set_filter, METH_O,
+     "Set a filter on the rule"
     },
     {NULL}  /* Sentinel */
 };
@@ -1060,6 +1171,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&MapType) < 0)
         return NULL;
+    if (PyType_Ready(&PointSymbolizerType) < 0)
+        return NULL;
     if (PyType_Ready(&PolygonSymbolizerType) < 0)
         return NULL;
     if (PyType_Ready(&ProjectionType) < 0)
@@ -1104,7 +1217,7 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-
+    
     Py_INCREF(&LayerType);
     if (PyModule_AddObject(m, "Layer", (PyObject *) &LayerType) < 0) {
         Py_DECREF(&LayerType);
@@ -1126,6 +1239,13 @@ PyInit_pymapnik3(void)
         return NULL;
     }
 
+    Py_INCREF(&PointSymbolizerType);
+    if (PyModule_AddObject(m, "PointSymbolizer", (PyObject *) &PointSymbolizerType) < 0) {
+        Py_DECREF(&PointSymbolizerType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
     Py_INCREF(&PolygonSymbolizerType);
     if (PyModule_AddObject(m, "PolygonSymbolizer", (PyObject *) &PolygonSymbolizerType) < 0) {
         Py_DECREF(&PolygonSymbolizerType);
