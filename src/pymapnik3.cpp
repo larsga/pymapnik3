@@ -173,6 +173,175 @@ static PyTypeObject ColorType = {
 
 
 // ===========================================================================
+// LINE SYMBOLIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::line_symbolizer* symbolizer;
+} MapnikLineSymbolizer;
+
+static void
+LineSymbolizer_dealloc(MapnikLineSymbolizer *self)
+{
+    delete self->symbolizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+LineSymbolizer_init(MapnikLineSymbolizer *self, PyObject *args)
+{
+    self->symbolizer = new mapnik::line_symbolizer();   
+    return 0;
+}
+
+static PyMemberDef LineSymbolizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+LineSymbolizer_set_stroke(MapnikLineSymbolizer *self, PyObject *color)
+{
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(PyExc_RuntimeError, "set_stroke requires a color object");
+        return Py_BuildValue("");
+    }
+    
+    MapnikColor* ourcolor = (MapnikColor*) color;
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::color&>(mapnik::keys::stroke, *ourcolor->color));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+LineSymbolizer_set_stroke_width(MapnikLineSymbolizer *self, PyObject *args)
+{
+    double width;
+    if (!PyArg_ParseTuple(args, "d", &width))
+        return NULL;
+    
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, double>(mapnik::keys::stroke_width, width));
+    return Py_BuildValue("");
+}
+
+static PyMethodDef LineSymbolizer_methods[] = {
+    {"set_stroke", (PyCFunction) LineSymbolizer_set_stroke, METH_O,
+     "Set stroke color"
+    },
+    {"set_stroke_width", (PyCFunction) LineSymbolizer_set_stroke_width, METH_VARARGS,
+     "Set stroke width"
+    },
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject LineSymbolizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.LineSymbolizer",
+    .tp_doc = PyDoc_STR("LineSymbolizer objects"),
+    .tp_basicsize = sizeof(MapnikLineSymbolizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) LineSymbolizer_init,
+    .tp_dealloc = (destructor) LineSymbolizer_dealloc,
+    .tp_members = LineSymbolizer_members,
+    .tp_methods = LineSymbolizer_methods,    
+};
+
+
+
+// ===========================================================================
+// CONTEXT
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::color* context; // FIXME
+} MapnikContext;
+
+static void
+Context_dealloc(MapnikContext *self)
+{
+    delete self->context;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+Context_init(MapnikContext *self, PyObject *args)
+{
+    self->context = new mapnik::color(std::string("#ffffff")); // FIXME
+    return 0;
+}
+
+static PyMemberDef Context_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef Context_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject ContextType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.Context",
+    .tp_doc = PyDoc_STR("Context objects"),
+    .tp_basicsize = sizeof(MapnikContext),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) Context_init,
+    .tp_dealloc = (destructor) Context_dealloc,
+    .tp_members = Context_members,
+    .tp_methods = Context_methods,    
+};
+
+
+// ===========================================================================
+// EXPRESSION
+
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<mapnik::expr_node> expression;
+} MapnikExpression;
+
+static void
+Expression_dealloc(MapnikExpression *self)
+{
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+Expression_init(MapnikExpression *self, PyObject *args)
+{
+    char* c_expr;
+    if (!PyArg_ParseTuple(args, "s", &c_expr))
+        return -1;
+    
+    self->expression = mapnik::parse_expression(std::string(c_expr));
+    return 0;
+}
+
+static PyMemberDef Expression_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef Expression_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject ExpressionType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.Expression",
+    .tp_doc = PyDoc_STR("Expression objects"),
+    .tp_basicsize = sizeof(MapnikExpression),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) Expression_init,
+    .tp_dealloc = (destructor) Expression_dealloc,
+    .tp_members = Expression_members,
+    .tp_methods = Expression_methods,    
+};
+
+
+// ===========================================================================
 // POLYGON SYMBOLIZER
 
 typedef struct {
@@ -399,14 +568,16 @@ static PyMemberDef Rule_members[] = {
 static PyObject *
 Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
 {
-    if (!PyObject_IsInstance(symbolizer, (PyObject*) &PolygonSymbolizerType)) {
+    if (PyObject_IsInstance(symbolizer, (PyObject*) &PolygonSymbolizerType)) {
+        MapnikPolygonSymbolizer* oursymb = (MapnikPolygonSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
+    } else if (PyObject_IsInstance(symbolizer, (PyObject*) &LineSymbolizerType)) {
+        MapnikLineSymbolizer* oursymb = (MapnikLineSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
+    } else {
         PyErr_SetString(PyExc_RuntimeError, "add_symbolizer requires a symbolizer object");
-        return Py_BuildValue("");
     }
-    
-    MapnikPolygonSymbolizer* oursymb = (MapnikPolygonSymbolizer*) symbolizer;
-    self->rule->append(*oursymb->symbolizer);
-    return Py_BuildValue("");
+    return Py_BuildValue("");    
 }
 
 static PyMethodDef Rule_methods[] = {
@@ -879,7 +1050,13 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&ColorType) < 0)
         return NULL;
+    if (PyType_Ready(&ContextType) < 0)
+        return NULL;
+    if (PyType_Ready(&ExpressionType) < 0)
+        return NULL;
     if (PyType_Ready(&LayerType) < 0)
+        return NULL;
+    if (PyType_Ready(&LineSymbolizerType) < 0)
         return NULL;
     if (PyType_Ready(&MapType) < 0)
         return NULL;
@@ -913,10 +1090,31 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
+    
+    Py_INCREF(&ContextType);
+    if (PyModule_AddObject(m, "Context", (PyObject *) &ContextType) < 0) {
+        Py_DECREF(&ContextType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
+    Py_INCREF(&ExpressionType);
+    if (PyModule_AddObject(m, "Expression", (PyObject *) &ExpressionType) < 0) {
+        Py_DECREF(&ExpressionType);
+        Py_DECREF(m);
+        return NULL;
+    }
 
     Py_INCREF(&LayerType);
     if (PyModule_AddObject(m, "Layer", (PyObject *) &LayerType) < 0) {
         Py_DECREF(&LayerType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&LineSymbolizerType);
+    if (PyModule_AddObject(m, "LineSymbolizer", (PyObject *) &LineSymbolizerType) < 0) {
+        Py_DECREF(&LineSymbolizerType);
         Py_DECREF(m);
         return NULL;
     }
