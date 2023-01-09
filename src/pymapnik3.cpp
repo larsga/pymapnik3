@@ -1,4 +1,5 @@
 
+// FIXME: need an exception type we can raise when things go to shit
 // FIXME: can pass wrong type objects without it being detected
 // FIXME: string parse errors, missing files etc must be detected
 
@@ -8,14 +9,33 @@
 
 #include <string>
 
+#include <mapnik/config.hpp>
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
+#include <boost/python.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/python/iterator.hpp>
+#include <boost/python/call_method.hpp>
+#include <boost/python/tuple.hpp>
+#include <boost/python/to_python_converter.hpp>
+#pragma GCC diagnostic pop
+
+#include <mapnik/value_types.hpp>
+
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/color.hpp>
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/feature_factory.hpp>
+#include <mapnik/feature_kv_iterator.hpp>
 #include <mapnik/feature_type_style.hpp>
 #include <mapnik/image_any.hpp>
 #include <mapnik/image_util.hpp>
+#include <mapnik/wkb.hpp>
+#include <mapnik/json/feature_parser.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/projection.hpp>
@@ -253,20 +273,19 @@ static PyTypeObject LineSymbolizerType = {
 
 typedef struct {
     PyObject_HEAD
-    mapnik::color* context; // FIXME
+    mapnik::context_ptr context;
 } MapnikContext;
 
 static void
 Context_dealloc(MapnikContext *self)
 {
-    delete self->context;
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 static int
 Context_init(MapnikContext *self, PyObject *args)
-{
-    self->context = new mapnik::color(std::string("#ffffff")); // FIXME
+{    
+    self->context = std::make_shared<mapnik::context_type>();
     return 0;
 }
 
@@ -338,6 +357,51 @@ static PyTypeObject ExpressionType = {
     .tp_dealloc = (destructor) Expression_dealloc,
     .tp_members = Expression_members,
     .tp_methods = Expression_methods,    
+};
+
+
+// ===========================================================================
+// FEATURE
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::feature_ptr feature;
+} MapnikFeature;
+
+static void
+Feature_dealloc(MapnikFeature *self)
+{
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+Feature_init(MapnikFeature *self, PyObject *args)
+{
+    // make an empty pointer
+    self->feature = std::shared_ptr<mapnik::feature_impl>(); 
+    return 0;
+}
+
+static PyMemberDef Feature_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef Feature_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject FeatureType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.Feature",
+    .tp_doc = PyDoc_STR("Feature objects"),
+    .tp_basicsize = sizeof(MapnikFeature),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) Feature_init,
+    .tp_dealloc = (destructor) Feature_dealloc,
+    .tp_members = Feature_members,
+    .tp_methods = Feature_methods,    
 };
 
 
@@ -680,7 +744,7 @@ Rule_set_filter(MapnikRule *self, PyObject *arg)
         return Py_BuildValue("");
     }
 
-    // MapnikExpression* expr = (MapnikExpression*) arg;
+    MapnikExpression* expr = (MapnikExpression*) arg;
 
     // FIXME: this line causes linking problems -- will deal with later
     //self->rule->set_filter(expr->expression);
@@ -1108,6 +1172,35 @@ void inspect(mapnik::image_any& image, int pos)
 }
 
 static PyObject *
+mapnik_parse_from_geojson(PyObject *self, PyObject *args)
+{
+    char* c_json;
+    PyObject* c_ctx;
+    if (!PyArg_ParseTuple(args, "sO", &c_json, &c_ctx))
+        return NULL;
+
+    if (!PyObject_IsInstance(c_ctx, (PyObject*) &ContextType)) {
+        PyErr_SetString(PyExc_RuntimeError, "second argument to from_geojson must be context object");
+        return Py_BuildValue("");
+    }
+
+    MapnikContext* ctx = (MapnikContext*) c_ctx;
+    mapnik::feature_ptr feature(mapnik::feature_factory::create(ctx->context, 1));
+    if (!mapnik::json::from_geojson(std::string(c_json), *feature))
+    {
+        throw std::runtime_error("Failed to parse geojson feature");
+    }
+
+    PyObject *argList = Py_BuildValue("()");
+    MapnikFeature* featureobj = (MapnikFeature*) PyObject_CallObject((PyObject *) &FeatureType, argList);
+    Py_DECREF(argList);
+    
+    featureobj->feature = feature;
+    PyObject* pyfeature = (PyObject*) featureobj;
+    return Py_BuildValue("O", pyfeature);
+}
+
+static PyObject *
 mapnik_render_to_file(PyObject *self, PyObject *args)
 {
     const char *filename, *format;
@@ -1134,6 +1227,9 @@ mapnik_render_to_file(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef MapnikMethods[] = {
+    {"parse_from_geojson", (PyCFunction) mapnik_parse_from_geojson, METH_VARARGS,
+     "Build feature from geojson string"
+    },
     {"render_to_file",  mapnik_render_to_file, METH_VARARGS,
      "Render a map to file."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -1164,6 +1260,8 @@ PyInit_pymapnik3(void)
     if (PyType_Ready(&ContextType) < 0)
         return NULL;
     if (PyType_Ready(&ExpressionType) < 0)
+        return NULL;
+    if (PyType_Ready(&FeatureType) < 0)
         return NULL;
     if (PyType_Ready(&LayerType) < 0)
         return NULL;
@@ -1214,6 +1312,13 @@ PyInit_pymapnik3(void)
     Py_INCREF(&ExpressionType);
     if (PyModule_AddObject(m, "Expression", (PyObject *) &ExpressionType) < 0) {
         Py_DECREF(&ExpressionType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&FeatureType);
+    if (PyModule_AddObject(m, "Feature", (PyObject *) &FeatureType) < 0) {
+        Py_DECREF(&FeatureType);
         Py_DECREF(m);
         return NULL;
     }

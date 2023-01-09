@@ -11,10 +11,13 @@ module1 = Extension(
                     '/usr/local/opt/icu4c/include',
                     '/usr/local/opt/harfbuzz/include/',
                     '/usr/local/opt/cairo/include/'],
-    libraries = ['mapnik'],
-    library_dirs = [MAPNIK + 'src/'],
+    libraries = ['mapnik', 'mapnik-json'],
+    library_dirs = [MAPNIK + 'src/',
+                    MAPNIK + 'src/json'],
     sources = ['src/pymapnik3.cpp'],
-    extra_compile_args = ["-std=c++14"],    
+    extra_compile_args = [
+        '-std=c++14', '-Wno-unused-variable', '-stdlib=libc++'
+    ],    
 )
 
 setup(
