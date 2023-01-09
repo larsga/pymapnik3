@@ -38,6 +38,7 @@
 #include <mapnik/json/feature_parser.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/map.hpp>
+#include <mapnik/memory_datasource.hpp>
 #include <mapnik/projection.hpp>
 #include <mapnik/proj_transform.hpp>
 
@@ -887,6 +888,73 @@ static PyTypeObject StyleType = {
 
 
 // ===========================================================================
+// MEMORY DATASOURCE
+
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<mapnik::memory_datasource> source;
+} MapnikMemoryDatasource;
+
+static void
+MemoryDatasource_dealloc(MapnikMemoryDatasource *self)
+{
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+MemoryDatasource_init(MapnikMemoryDatasource *self, PyObject *args)
+{
+    mapnik::parameters params;
+    params[std::string("type")] = std::string("memory");
+    
+    self->source = std::make_shared<mapnik::memory_datasource>(params);
+    return 0;
+}
+
+static PyMemberDef MemoryDatasource_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+MemoryDatasource_add_feature(MapnikMemoryDatasource *self, PyObject* args)
+{
+    PyObject* obj;
+    if (!PyArg_ParseTuple(args, "O", &obj))
+        return NULL;
+
+    if (!PyObject_IsInstance(obj, (PyObject*) &FeatureType)) {
+        PyErr_SetString(PyExc_RuntimeError, "add_feature requires a feature object");
+        return Py_BuildValue("");
+    }
+    
+    MapnikFeature *feature = (MapnikFeature*) obj;
+    self->source->push(feature->feature);
+    return Py_BuildValue("");
+}
+
+static PyMethodDef MemoryDatasource_methods[] = {
+    {"add_feature", (PyCFunction) MemoryDatasource_add_feature, METH_VARARGS,
+     "Add a feature to the data source"
+    },
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject MemoryDatasourceType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.MemoryDatasource",
+    .tp_doc = PyDoc_STR("MemoryDatasource objects"),
+    .tp_basicsize = sizeof(MapnikMemoryDatasource),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) MemoryDatasource_init,
+    .tp_dealloc = (destructor) MemoryDatasource_dealloc,
+    .tp_members = MemoryDatasource_members,
+    .tp_methods = MemoryDatasource_methods,    
+};
+
+
+// ===========================================================================
 // LAYER
 
 typedef struct {
@@ -931,8 +999,15 @@ Layer_add_style(MapnikLayer *self, PyObject* args)
 static PyObject *
 Layer_set_datasource(MapnikLayer *self, PyObject *arg)
 {
-    MapnikShapefile* shapefile = (MapnikShapefile*) arg; // FIXME
-    self->layer->set_datasource(shapefile->source);
+    if (PyObject_IsInstance(arg, (PyObject*) &ShapefileType)) {
+        MapnikShapefile* shapefile = (MapnikShapefile*) arg;
+        self->layer->set_datasource(shapefile->source);
+    } else if (PyObject_IsInstance(arg, (PyObject*) &MemoryDatasourceType)) {
+        MapnikMemoryDatasource* memory = (MapnikMemoryDatasource*) arg;
+        self->layer->set_datasource(memory->source);
+    } else {
+        PyErr_SetString(PyExc_RuntimeError, "set_datasource requires a datasource object");
+    }
     return Py_BuildValue("");
 }
 
@@ -941,6 +1016,17 @@ Layer_get_srs(MapnikLayer *self, PyObject *Py_UNUSED(ignored))
 {
     const char* c_srs = self->layer->srs().c_str();
     return Py_BuildValue("s", c_srs);
+}
+
+static PyObject *
+Layer_set_clear_label_cache(MapnikLayer *self, PyObject* args)
+{
+    int flag;
+    if (!PyArg_ParseTuple(args, "p", &flag))
+        return NULL;
+
+    self->layer->set_clear_label_cache(flag == 1);
+    return Py_BuildValue("");
 }
 
 static PyObject *
@@ -963,6 +1049,9 @@ static PyMethodDef Layer_methods[] = {
     },
     {"set_datasource", (PyCFunction) Layer_set_datasource, METH_O,
      "Add underlying data source"
+    },
+    {"set_clear_label_cache", (PyCFunction) Layer_set_clear_label_cache, METH_VARARGS,
+     "Sets bool flag clear label cache"
     },
     {"set_srs", (PyCFunction) Layer_set_srs, METH_VARARGS,
      "Set projection"
@@ -1269,6 +1358,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&MapType) < 0)
         return NULL;
+    if (PyType_Ready(&MemoryDatasourceType) < 0)
+        return NULL;
     if (PyType_Ready(&PointSymbolizerType) < 0)
         return NULL;
     if (PyType_Ready(&PolygonSymbolizerType) < 0)
@@ -1344,6 +1435,13 @@ PyInit_pymapnik3(void)
         return NULL;
     }
 
+    Py_INCREF(&MemoryDatasourceType);
+    if (PyModule_AddObject(m, "MemoryDatasource", (PyObject *) &MemoryDatasourceType) < 0) {
+        Py_DECREF(&MemoryDatasourceType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
     Py_INCREF(&PointSymbolizerType);
     if (PyModule_AddObject(m, "PointSymbolizer", (PyObject *) &PointSymbolizerType) < 0) {
         Py_DECREF(&PointSymbolizerType);
