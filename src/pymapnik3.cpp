@@ -148,11 +148,19 @@ Color_dealloc(MapnikColor *self)
 static int
 Color_init(MapnikColor *self, PyObject *args)
 {
-    const char *colorspec;
-    if (!PyArg_ParseTuple(args, "s", &colorspec))
-        return -1;
-
-    self->color = new mapnik::color(std::string(colorspec));
+    int length = PySequence_Length(args);
+    
+    if (length == 1) {
+        const char *colorspec;
+        if (!PyArg_ParseTuple(args, "s", &colorspec))
+            return -1;
+        self->color = new mapnik::color(std::string(colorspec));
+    } else if (length == 3 || length == 4) {
+        unsigned char r, g, b, t = 0;
+        if (!PyArg_ParseTuple(args, "bbb|b", &r, &g, &b, &t))
+            return -1;
+        self->color = new mapnik::color(r, g, b, t);
+    }
     
     return 0;
 }
