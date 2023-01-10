@@ -694,6 +694,51 @@ static PyTypeObject ProjTransformType = {
 
 
 // ===========================================================================
+// RASTER SYMBOLIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::raster_symbolizer *symbolizer;
+} MapnikRasterSymbolizer;
+
+static void
+RasterSymbolizer_dealloc(MapnikRasterSymbolizer *self)
+{
+    delete self->symbolizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+RasterSymbolizer_init(MapnikRasterSymbolizer *self, PyObject *args)
+{
+    self->symbolizer = new mapnik::raster_symbolizer();
+    return 0;
+}
+
+static PyMemberDef RasterSymbolizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef RasterSymbolizer_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject RasterSymbolizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.RasterSymbolizer",
+    .tp_doc = PyDoc_STR("RasterSymbolizer objects"),
+    .tp_basicsize = sizeof(MapnikRasterSymbolizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) RasterSymbolizer_init,
+    .tp_dealloc = (destructor) RasterSymbolizer_dealloc,
+    .tp_members = RasterSymbolizer_members,
+    .tp_methods = RasterSymbolizer_methods,    
+};
+
+
+// ===========================================================================
 // RULE
 
 typedef struct {
@@ -1352,6 +1397,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&ProjTransformType) < 0)
         return NULL;
+    if (PyType_Ready(&RasterSymbolizerType) < 0)
+        return NULL;
     if (PyType_Ready(&RuleType) < 0)
         return NULL;
     if (PyType_Ready(&ShapefileType) < 0)
@@ -1450,6 +1497,13 @@ PyInit_pymapnik3(void)
     Py_INCREF(&ProjTransformType);
     if (PyModule_AddObject(m, "ProjTransform", (PyObject *) &ProjTransformType) < 0) {
         Py_DECREF(&ProjTransformType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&RasterSymbolizerType);
+    if (PyModule_AddObject(m, "RasterSymbolizer", (PyObject *) &RasterSymbolizerType) < 0) {
+        Py_DECREF(&RasterSymbolizerType);
         Py_DECREF(m);
         return NULL;
     }
