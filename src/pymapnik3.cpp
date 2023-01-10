@@ -570,9 +570,23 @@ PolygonSymbolizer_set_fill(MapnikPolygonSymbolizer *self, PyObject *color)
     return Py_BuildValue("");
 }
 
+static PyObject *
+PolygonSymbolizer_set_fill_opacity(MapnikPolygonSymbolizer *self, PyObject *args)
+{
+    double opacity;
+    if (!PyArg_ParseTuple(args, "d", &opacity))
+        return NULL;
+    
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, double>(mapnik::keys::fill_opacity, opacity));
+    return Py_BuildValue("");
+}
+
 static PyMethodDef PolygonSymbolizer_methods[] = {
     {"set_fill", (PyCFunction) PolygonSymbolizer_set_fill, METH_O,
      "Set fill color"
+    },
+    {"set_fill_opacity", (PyCFunction) PolygonSymbolizer_set_fill_opacity, METH_VARARGS,
+     "Set fill opacity (0.0-1.0)"
     },
     {NULL}  /* Sentinel */
 };
