@@ -757,7 +757,29 @@ static PyMemberDef RasterColorizer_members[] = {
     {NULL}  /* Sentinel */
 };
 
+static PyObject *
+RasterColorizer_add_stop(MapnikRasterColorizer *self, PyObject *args)
+{
+    double limit;
+    PyObject *color;
+    if (!PyArg_ParseTuple(args, "dO", &limit, &color))
+        return NULL;
+   
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(PyExc_RuntimeError, "second argument must be a color object");
+        return NULL;
+    }
+    MapnikColor *mcolor = (MapnikColor*) color;
+
+    self->colorizer->add_stop(mapnik::colorizer_stop(limit, mapnik::COLORIZER_INHERIT, *mcolor->color));
+    
+    return Py_BuildValue("");
+}
+
 static PyMethodDef RasterColorizer_methods[] = {
+    {"add_stop", (PyCFunction) RasterColorizer_add_stop, METH_VARARGS,
+     "Add a coloring step with limit value and color"
+    },
     {NULL}  /* Sentinel */
 };
 
@@ -818,6 +840,9 @@ RasterSymbolizer_set_colorizer(MapnikRasterSymbolizer *self, PyObject *arg)
 
     // FIXME: the problem with this is that later changes to the colorizer
     //        will not be copied over ...
+    //
+    // could we solve this by making the colorizer object refer to
+    // this new wrapped thing?    
     self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::raster_colorizer_ptr>(mapnik::keys::colorizer, wrapped));
     
     return Py_BuildValue("");
