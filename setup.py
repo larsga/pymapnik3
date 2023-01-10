@@ -16,7 +16,8 @@ module1 = Extension(
                     MAPNIK + 'src/json'],
     sources = ['src/pymapnik3.cpp'],
     extra_compile_args = [
-        '-std=c++14', '-Wno-unused-variable', '-stdlib=libc++'
+        '-std=c++14', '-Wno-unused-variable', '-stdlib=libc++',
+        '-DBIGINT', # mapnik is compiled with this, so we must be, too
     ],    
 )
 

@@ -449,7 +449,7 @@ Gdal_init(MapnikGdal *self, PyObject *args, PyObject *kwargs)
     if (file != NULL)
         params[std::string("file")] = std::string(file);
     if (band != -1)
-        params[std::string("band")] = band;
+        params[std::string("band")] = (long long) band;
     
     self->source = mapnik::datasource_cache::instance().create(params);
     return 0;
@@ -1061,9 +1061,7 @@ Rule_set_filter(MapnikRule *self, PyObject *arg)
     }
 
     MapnikExpression* expr = (MapnikExpression*) arg;
-
-    // FIXME: this line causes linking problems -- will deal with later
-    //self->rule->set_filter(expr->expression);
+    self->rule->set_filter(expr->expression);
     
     return Py_BuildValue("");
 }
