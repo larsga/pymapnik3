@@ -694,6 +694,81 @@ static PyTypeObject ProjTransformType = {
 
 
 // ===========================================================================
+// RASTER COLORIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::raster_colorizer *colorizer;
+} MapnikRasterColorizer;
+
+static void
+RasterColorizer_dealloc(MapnikRasterColorizer *self)
+{
+    delete self->colorizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static mapnik::colorizer_mode_enum int_to_colorizer_mode(int mode)
+{
+    switch(mode)
+    {
+    case 0:
+        return mapnik::COLORIZER_INHERIT;
+    case 1:
+        return mapnik::COLORIZER_LINEAR;
+    case 2:
+        return mapnik::COLORIZER_DISCRETE;
+    case 3:
+        return mapnik::COLORIZER_EXACT;
+    default:
+        return mapnik::colorizer_mode_enum_MAX; // signal error
+    }
+}
+
+static int
+RasterColorizer_init(MapnikRasterColorizer *self, PyObject *args)
+{
+    int mode;
+    PyObject *color;
+    if (!PyArg_ParseTuple(args, "iO", &mode, &color))
+        return -1;
+
+    mapnik::colorizer_mode_enum mmode = int_to_colorizer_mode(mode);
+    
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(PyExc_RuntimeError, "second argument must be a color object");
+        return -1;
+    }
+    MapnikColor *mcolor = (MapnikColor*) color;
+    
+    self->colorizer = new mapnik::raster_colorizer(mmode, *mcolor->color);
+    return 0;
+}
+
+static PyMemberDef RasterColorizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef RasterColorizer_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject RasterColorizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.RasterColorizer",
+    .tp_doc = PyDoc_STR("RasterColorizer objects"),
+    .tp_basicsize = sizeof(MapnikRasterColorizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) RasterColorizer_init,
+    .tp_dealloc = (destructor) RasterColorizer_dealloc,
+    .tp_members = RasterColorizer_members,
+    .tp_methods = RasterColorizer_methods,    
+};
+
+
+// ===========================================================================
 // RASTER SYMBOLIZER
 
 typedef struct {
@@ -1397,6 +1472,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&ProjTransformType) < 0)
         return NULL;
+    if (PyType_Ready(&RasterColorizerType) < 0)
+        return NULL;
     if (PyType_Ready(&RasterSymbolizerType) < 0)
         return NULL;
     if (PyType_Ready(&RuleType) < 0)
@@ -1501,6 +1578,13 @@ PyInit_pymapnik3(void)
         return NULL;
     }
 
+    Py_INCREF(&RasterColorizerType);
+    if (PyModule_AddObject(m, "RasterColorizer", (PyObject *) &RasterColorizerType) < 0) {
+        Py_DECREF(&RasterColorizerType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
     Py_INCREF(&RasterSymbolizerType);
     if (PyModule_AddObject(m, "RasterSymbolizer", (PyObject *) &RasterSymbolizerType) < 0) {
         Py_DECREF(&RasterSymbolizerType);
@@ -1526,6 +1610,19 @@ PyInit_pymapnik3(void)
     if (PyModule_AddObject(m, "Style", (PyObject *) &StyleType) < 0) {
         Py_DECREF(&StyleType);
         Py_DECREF(m);
+        return NULL;
+    }
+
+    if (PyModule_AddIntConstant(m, "COLORIZER_INHERIT", 0)) {
+        return NULL;
+    }
+    if (PyModule_AddIntConstant(m, "COLORIZER_LINEAR", 1)) {
+        return NULL;
+    }
+    if (PyModule_AddIntConstant(m, "COLORIZER_DISCRETE", 2)) {
+        return NULL;
+    }
+    if (PyModule_AddIntConstant(m, "COLORIZER_EXACT", 3)) {
         return NULL;
     }
     
