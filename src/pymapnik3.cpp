@@ -1234,9 +1234,7 @@ struct agg_renderer_visitor_1
 template <>
 void agg_renderer_visitor_1::operator()<mapnik::image_rgba8> (mapnik::image_rgba8 & pixmap)
 {
-    MAPNIK_LOG_DEBUG(flupp) << "setting up renderer" << std::endl;
     mapnik::agg_renderer<mapnik::image_rgba8> ren(m_, pixmap, scale_factor_, offset_x_, offset_y_);
-    MAPNIK_LOG_DEBUG(flupp) << "applying renderer" << std::endl;
     ren.apply();
 }
 
@@ -1246,18 +1244,7 @@ void render(mapnik::Map const& map,
             unsigned offset_x = 0u,
             unsigned offset_y = 0u)
 {
-    MAPNIK_LOG_DEBUG(flupp) << "ready to render map" << std::endl;
     mapnik::util::apply_visitor(agg_renderer_visitor_1(map, scale_factor, offset_x, offset_y), image);
-    MAPNIK_LOG_DEBUG(flupp) << "map has been rendered" << std::endl;
-}
-
-void inspect(mapnik::image_any& image, int pos)
-{
-    std::cout << "at " << pos << " ";
-    for (int ix = 0; ix < 10; ix++) {
-        std::cout << (int) image.bytes()[pos + ix] << " ";
-    }
-    std::cout << std::endl;
 }
 
 static PyObject *
@@ -1307,9 +1294,6 @@ mapnik_render_to_file(PyObject *self, PyObject *args)
 
     mapnik::image_any image = mapnik::image_rgba8(themap->map->width(), themap->map->height());
     render(*themap->map, image, 1.0, 0, 0);
-    inspect(image, 0);
-    inspect(image, 10000);
-    inspect(image, 100000);
     mapnik::save_to_file(image, std::string(filename), std::string(format));
     
     return Py_BuildValue("");
