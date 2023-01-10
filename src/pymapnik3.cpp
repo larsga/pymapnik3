@@ -22,6 +22,7 @@
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/color.hpp>
+#include <mapnik/config_error.hpp>
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/feature.hpp>
@@ -371,8 +372,16 @@ TextSymbolizer_set_name_expression(MapnikTextSymbolizer *self, PyObject *args)
     char* expr;
     if (!PyArg_ParseTuple(args, "s", &expr))
         return NULL;
+
+    try {
+        self->placements->defaults.set_format_tree(std::make_shared<mapnik::formatting::text_node>(mapnik::parse_expression(expr)));
+    } catch (std::exception e) {
+        // FIXME: we can't say what the error is, because config_error.what()
+        // doesn't get compiled into the mapnik library (??!?!)
+        PyErr_SetString(MapnikError, "parse error in expression");
+        return NULL;
+    }
     
-    self->placements->defaults.set_format_tree(std::make_shared<mapnik::formatting::text_node>(mapnik::parse_expression(expr)));    
     return Py_BuildValue("");
 }
 
@@ -1830,6 +1839,7 @@ PyMODINIT_FUNC
 PyInit_pymapnik3(void)
 {
     PyObject *m;
+   
     if (PyType_Ready(&BoxType) < 0)
         return NULL;
     if (PyType_Ready(&ColorType) < 0)
