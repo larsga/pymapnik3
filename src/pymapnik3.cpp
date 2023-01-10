@@ -479,6 +479,59 @@ static PyTypeObject GdalType = {
 
 
 // ===========================================================================
+// GEOJSON
+
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<mapnik::datasource> source;
+} MapnikGeoJson;
+
+static void
+GeoJson_dealloc(MapnikGeoJson *self)
+{
+    //delete self->source;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+GeoJson_init(MapnikGeoJson *self, PyObject *args)
+{
+    char *filename;
+    if (!PyArg_ParseTuple(args, "s", &filename))
+        return -1;
+    
+    mapnik::parameters params;
+    params[std::string("file")] = std::string(filename);
+    params[std::string("type")] = std::string("geojson");
+    
+    self->source = mapnik::datasource_cache::instance().create(params);
+    return 0;
+}
+
+static PyMemberDef GeoJson_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef GeoJson_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject GeoJsonType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.GeoJSON",
+    .tp_doc = PyDoc_STR("GeoJSON objects"),
+    .tp_basicsize = sizeof(MapnikGeoJson),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) GeoJson_init,
+    .tp_dealloc = (destructor) GeoJson_dealloc,
+    .tp_members = GeoJson_members,
+    .tp_methods = GeoJson_methods,    
+};
+
+
+// ===========================================================================
 // POLYGON SYMBOLIZER
 
 typedef struct {
@@ -1256,6 +1309,9 @@ Layer_set_datasource(MapnikLayer *self, PyObject *arg)
     } else if (PyObject_IsInstance(arg, (PyObject*) &GdalType)) {
         MapnikGdal* gdal = (MapnikGdal*) arg;
         self->layer->set_datasource(gdal->source);
+    } else if (PyObject_IsInstance(arg, (PyObject*) &GeoJsonType)) {
+        MapnikGeoJson* geojson = (MapnikGeoJson*) arg;
+        self->layer->set_datasource(geojson->source);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "set_datasource requires a datasource object");
     }
@@ -1589,6 +1645,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&GdalType) < 0)
         return NULL;
+    if (PyType_Ready(&GeoJsonType) < 0)
+        return NULL;
     if (PyType_Ready(&LayerType) < 0)
         return NULL;
     if (PyType_Ready(&LineSymbolizerType) < 0)
@@ -1658,6 +1716,13 @@ PyInit_pymapnik3(void)
     Py_INCREF(&GdalType);
     if (PyModule_AddObject(m, "Gdal", (PyObject *) &GdalType) < 0) {
         Py_DECREF(&GdalType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&GeoJsonType);
+    if (PyModule_AddObject(m, "GeoJSON", (PyObject *) &GeoJsonType) < 0) {
+        Py_DECREF(&GeoJsonType);
         Py_DECREF(m);
         return NULL;
     }
