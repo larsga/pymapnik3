@@ -902,11 +902,15 @@ RasterSymbolizer_set_colorizer(MapnikRasterSymbolizer *self, PyObject *arg)
     wrapped->set_default_mode(colorizer->colorizer->get_default_mode());
     wrapped->set_default_color(colorizer->colorizer->get_default_color());
 
+    mapnik::colorizer_stops stops = colorizer->colorizer->get_stops();
+    for (auto i = stops.begin(); i != stops.end(); ++i)
+        wrapped->add_stop(*i);
+
     // FIXME: the problem with this is that later changes to the colorizer
     //        will not be copied over ...
     //
     // could we solve this by making the colorizer object refer to
-    // this new wrapped thing?    
+    // this new wrapped thing? not a full solution, unfortunately
     self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::raster_colorizer_ptr>(mapnik::keys::colorizer, wrapped));
     
     return Py_BuildValue("");
