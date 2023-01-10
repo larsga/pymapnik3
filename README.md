@@ -20,7 +20,6 @@ Currently in development and *not* ready for use. Contributions welcome.
 
  * `RasterSymbolizer` doesn't do anything.
  * Implement `ShieldSymbolizer`.
- * Need an exception type, and to raise it on errors.
  * Need to detect mapnik exceptions and handle them.
  * Build system needs to figure out whether or not to define `BIGINT`.
  * `setup.py` has lots of hard-coded paths.
