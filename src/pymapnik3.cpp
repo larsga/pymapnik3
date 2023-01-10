@@ -802,7 +802,31 @@ static PyMemberDef RasterSymbolizer_members[] = {
     {NULL}  /* Sentinel */
 };
 
+static PyObject *
+RasterSymbolizer_set_colorizer(MapnikRasterSymbolizer *self, PyObject *arg)
+{
+    if (!PyObject_IsInstance(arg, (PyObject*) &RasterColorizerType)) {
+        PyErr_SetString(PyExc_RuntimeError, "set_colorizer requires a RasterColorizer object");
+        return Py_BuildValue("");
+    }
+
+    MapnikRasterColorizer* colorizer = (MapnikRasterColorizer*) arg;
+    mapnik::raster_colorizer_ptr wrapped = std::make_shared<mapnik::raster_colorizer>();
+    // looks like we have to manually copy every aspect of the colorizer :-(
+    wrapped->set_default_mode(colorizer->colorizer->get_default_mode());
+    wrapped->set_default_color(colorizer->colorizer->get_default_color());
+
+    // FIXME: the problem with this is that later changes to the colorizer
+    //        will not be copied over ...
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::raster_colorizer_ptr>(mapnik::keys::colorizer, wrapped));
+    
+    return Py_BuildValue("");
+}
+
 static PyMethodDef RasterSymbolizer_methods[] = {
+    {"set_colorizer", (PyCFunction) RasterSymbolizer_set_colorizer, METH_O,
+     "Set the colorizer"
+    },
     {NULL}  /* Sentinel */
 };
 
