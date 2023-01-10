@@ -4,7 +4,7 @@
 Python 3.x bindings for the [mapnik](https://github.com/mapnik/mapnik)
 map-rendering engine.
 
-Currently in development and *not* ready for use.
+Currently in development and *not* ready for use. Contributions welcome.
 
 ## Goals
 
@@ -19,11 +19,11 @@ Currently in development and *not* ready for use.
 ## Outstanding work
 
  * Font path is hard-coded. Solve by implementing `register_font`.
- * Data source path is hard-coded. Solve by implementing `register_datasources`.
- * `RasterColorizer` doesn't do anything.
+ * `RasterSymbolizer` doesn't do anything.
  * Implement `ShieldSymbolizer`.
  * Need an exception type, and to raise it on errors.
  * Need to detect mapnik exceptions and handle them.
  * Build system needs to figure out whether or not to define `BIGINT`.
  * `setup.py` has lots of hard-coded paths.
  * Needs documentation to show how to use it.
+ * Implement CSV data source.

@@ -1758,6 +1758,17 @@ mapnik_parse_from_geojson(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+mapnik_register_datasources(PyObject *self, PyObject *args)
+{
+    const char *path;
+    if (!PyArg_ParseTuple(args, "s", &path))
+        return NULL;
+
+    mapnik::datasource_cache::instance().register_datasources(std::string(path));
+    return Py_BuildValue("");
+}
+
+static PyObject *
 mapnik_render_to_file(PyObject *self, PyObject *args)
 {
     const char *filename, *format;
@@ -1784,6 +1795,8 @@ static PyMethodDef MapnikMethods[] = {
     {"parse_from_geojson", (PyCFunction) mapnik_parse_from_geojson, METH_VARARGS,
      "Build feature from geojson string"
     },
+    {"register_datasources",  mapnik_register_datasources, METH_VARARGS,
+     "Tell mapnik where to find datasource plugins"},
     {"render_to_file",  mapnik_render_to_file, METH_VARARGS,
      "Render a map to file."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -1803,9 +1816,6 @@ static PyModuleDef mapnikmodule = {
 PyMODINIT_FUNC
 PyInit_pymapnik3(void)
 {
-    std::string path = std::string("/usr/local/lib/mapnik/input/"); // FIXME
-    mapnik::datasource_cache::instance().register_datasources(path);
- 
     PyObject *m;
     if (PyType_Ready(&BoxType) < 0)
         return NULL;
