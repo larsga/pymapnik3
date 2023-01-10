@@ -18,7 +18,6 @@ Currently in development and *not* ready for use. Contributions welcome.
 
 ## Outstanding work
 
- * Font path is hard-coded. Solve by implementing `register_font`.
  * `RasterSymbolizer` doesn't do anything.
  * Implement `ShieldSymbolizer`.
  * Need an exception type, and to raise it on errors.

@@ -294,8 +294,6 @@ TextSymbolizer_dealloc(MapnikTextSymbolizer *self)
 static int
 TextSymbolizer_init(MapnikTextSymbolizer *self, PyObject *args)
 {
-    mapnik::freetype_engine::register_font("/usr/local/lib/mapnik/fonts/DejaVuSans.ttf");
- 
     self->symbolizer = new mapnik::text_symbolizer();
     self->placements = std::make_shared<mapnik::text_placements_dummy>();
     self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::text_placements_ptr>(mapnik::keys::text_placements_, self->placements));
@@ -1769,6 +1767,17 @@ mapnik_register_datasources(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+mapnik_register_font(PyObject *self, PyObject *args)
+{
+    const char *path;
+    if (!PyArg_ParseTuple(args, "s", &path))
+        return NULL;
+
+    mapnik::freetype_engine::register_font(path);
+    return Py_BuildValue("");
+}
+
+static PyObject *
 mapnik_render_to_file(PyObject *self, PyObject *args)
 {
     const char *filename, *format;
@@ -1797,6 +1806,8 @@ static PyMethodDef MapnikMethods[] = {
     },
     {"register_datasources",  mapnik_register_datasources, METH_VARARGS,
      "Tell mapnik where to find datasource plugins"},
+    {"register_font",  mapnik_register_font, METH_VARARGS,
+     "Import a font file into mapnik"},
     {"render_to_file",  mapnik_render_to_file, METH_VARARGS,
      "Render a map to file."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
