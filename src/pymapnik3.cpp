@@ -415,6 +415,70 @@ static PyTypeObject FeatureType = {
 
 
 // ===========================================================================
+// GDAL
+
+typedef struct {
+    PyObject_HEAD
+    std::shared_ptr<mapnik::datasource> source;
+} MapnikGdal;
+
+static void
+Gdal_dealloc(MapnikGdal *self)
+{
+    //delete self->source;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+Gdal_init(MapnikGdal *self, PyObject *args, PyObject *kwargs)
+{
+    char *base = NULL, *file = NULL;
+    int band = -1;
+
+    static char *kwlist[] = {"base", "file", "band", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist, 
+                                     &base, &file, &band))
+    {
+        return -1;
+    }    
+    
+    mapnik::parameters params;
+    params[std::string("type")] = std::string("gdal");
+    if (base != NULL)
+        params[std::string("base")] = std::string(base);
+    if (file != NULL)
+        params[std::string("file")] = std::string(file);
+    if (band != -1)
+        params[std::string("band")] = band;
+    
+    self->source = mapnik::datasource_cache::instance().create(params);
+    return 0;
+}
+
+static PyMemberDef Gdal_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef Gdal_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject GdalType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.Gdal",
+    .tp_doc = PyDoc_STR("Gdal objects"),
+    .tp_basicsize = sizeof(MapnikGdal),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) Gdal_init,
+    .tp_dealloc = (destructor) Gdal_dealloc,
+    .tp_members = Gdal_members,
+    .tp_methods = Gdal_methods,    
+};
+
+
+// ===========================================================================
 // POLYGON SYMBOLIZER
 
 typedef struct {
@@ -1516,6 +1580,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&FeatureType) < 0)
         return NULL;
+    if (PyType_Ready(&GdalType) < 0)
+        return NULL;
     if (PyType_Ready(&LayerType) < 0)
         return NULL;
     if (PyType_Ready(&LineSymbolizerType) < 0)
@@ -1578,6 +1644,13 @@ PyInit_pymapnik3(void)
     Py_INCREF(&FeatureType);
     if (PyModule_AddObject(m, "Feature", (PyObject *) &FeatureType) < 0) {
         Py_DECREF(&FeatureType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&GdalType);
+    if (PyModule_AddObject(m, "Gdal", (PyObject *) &GdalType) < 0) {
+        Py_DECREF(&GdalType);
         Py_DECREF(m);
         return NULL;
     }
