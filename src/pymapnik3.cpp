@@ -1249,6 +1249,9 @@ Layer_set_datasource(MapnikLayer *self, PyObject *arg)
     } else if (PyObject_IsInstance(arg, (PyObject*) &MemoryDatasourceType)) {
         MapnikMemoryDatasource* memory = (MapnikMemoryDatasource*) arg;
         self->layer->set_datasource(memory->source);
+    } else if (PyObject_IsInstance(arg, (PyObject*) &GdalType)) {
+        MapnikGdal* gdal = (MapnikGdal*) arg;
+        self->layer->set_datasource(gdal->source);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "set_datasource requires a datasource object");
     }
