@@ -41,6 +41,9 @@
 #include <mapnik/memory_datasource.hpp>
 #include <mapnik/projection.hpp>
 #include <mapnik/proj_transform.hpp>
+#include <mapnik/text/placements/dummy.hpp>
+#include <mapnik/text/formatting/text.hpp>
+#include <mapnik/font_engine_freetype.hpp>
 
 #ifdef HAVE_CAIRO
 #include <mapnik/cairo_io.hpp>
@@ -273,6 +276,115 @@ static PyTypeObject LineSymbolizerType = {
     .tp_dealloc = (destructor) LineSymbolizer_dealloc,
     .tp_members = LineSymbolizer_members,
     .tp_methods = LineSymbolizer_methods,    
+};
+
+
+// ===========================================================================
+// TEXT SYMBOLIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::text_symbolizer* symbolizer;
+    mapnik::text_placements_ptr placements;
+} MapnikTextSymbolizer;
+
+static void
+TextSymbolizer_dealloc(MapnikTextSymbolizer *self)
+{
+    delete self->symbolizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+TextSymbolizer_init(MapnikTextSymbolizer *self, PyObject *args)
+{
+    mapnik::freetype_engine::register_font("/usr/local/lib/mapnik/fonts/DejaVuSans.ttf");
+ 
+    self->symbolizer = new mapnik::text_symbolizer();
+    self->placements = std::make_shared<mapnik::text_placements_dummy>();
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::text_placements_ptr>(mapnik::keys::text_placements_, self->placements));
+    return 0;
+}
+
+static PyMemberDef TextSymbolizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+TextSymbolizer_set_fill(MapnikTextSymbolizer *self, PyObject *color)
+{
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(PyExc_RuntimeError, "set_fill requires a color object");
+        return Py_BuildValue("");
+    }
+    
+    MapnikColor* ourcolor = (MapnikColor*) color;
+    self->placements->defaults.format_defaults.fill = *ourcolor->color;
+    //self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::color&>(mapnik::keys::fill, *ourcolor->color));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+TextSymbolizer_set_text_size(MapnikTextSymbolizer *self, PyObject *args)
+{
+    double size;
+    if (!PyArg_ParseTuple(args, "d", &size))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.text_size = size;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+TextSymbolizer_set_face_name(MapnikTextSymbolizer *self, PyObject *args)
+{
+    char* name;
+    if (!PyArg_ParseTuple(args, "s", &name))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.face_name = name;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+TextSymbolizer_set_name_expression(MapnikTextSymbolizer *self, PyObject *args)
+{
+    char* expr;
+    if (!PyArg_ParseTuple(args, "s", &expr))
+        return NULL;
+    
+    self->placements->defaults.set_format_tree(std::make_shared<mapnik::formatting::text_node>(mapnik::parse_expression(expr)));    
+    return Py_BuildValue("");
+}
+
+static PyMethodDef TextSymbolizer_methods[] = {
+    {"set_face_name", (PyCFunction) TextSymbolizer_set_face_name, METH_VARARGS,
+     "Set text font name"
+    },
+    {"set_fill", (PyCFunction) TextSymbolizer_set_fill, METH_O,
+     "Set fill color"
+    },
+    {"set_name_expression", (PyCFunction) TextSymbolizer_set_name_expression, METH_VARARGS,
+     "Set expression to compute name of feature"
+    },
+    {"set_text_size", (PyCFunction) TextSymbolizer_set_text_size, METH_VARARGS,
+     "Set text size"
+    },
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject TextSymbolizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.TextSymbolizer",
+    .tp_doc = PyDoc_STR("TextSymbolizer objects"),
+    .tp_basicsize = sizeof(MapnikTextSymbolizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) TextSymbolizer_init,
+    .tp_dealloc = (destructor) TextSymbolizer_dealloc,
+    .tp_members = TextSymbolizer_members,
+    .tp_methods = TextSymbolizer_methods,    
 };
 
 
@@ -1046,6 +1158,9 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
     } else if (PyObject_IsInstance(symbolizer, (PyObject*) &RasterSymbolizerType)) {
         MapnikRasterSymbolizer* oursymb = (MapnikRasterSymbolizer*) symbolizer;
         self->rule->append(*oursymb->symbolizer);
+    } else if (PyObject_IsInstance(symbolizer, (PyObject*) &TextSymbolizerType)) {
+        MapnikTextSymbolizer* oursymb = (MapnikTextSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "add_symbolizer requires a symbolizer object");
     }
@@ -1685,6 +1800,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&StyleType) < 0)
         return NULL;
+    if (PyType_Ready(&TextSymbolizerType) < 0)
+        return NULL;
 
     m = PyModule_Create(&mapnikmodule);
     if (m == NULL)
@@ -1826,6 +1943,13 @@ PyInit_pymapnik3(void)
     Py_INCREF(&StyleType);
     if (PyModule_AddObject(m, "Style", (PyObject *) &StyleType) < 0) {
         Py_DECREF(&StyleType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&TextSymbolizerType);
+    if (PyModule_AddObject(m, "TextSymbolizer", (PyObject *) &TextSymbolizerType) < 0) {
+        Py_DECREF(&TextSymbolizerType);
         Py_DECREF(m);
         return NULL;
     }
