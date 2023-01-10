@@ -908,6 +908,9 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
     } else if (PyObject_IsInstance(symbolizer, (PyObject*) &PointSymbolizerType)) {
         MapnikPointSymbolizer* oursymb = (MapnikPointSymbolizer*) symbolizer;
         self->rule->append(*oursymb->symbolizer);
+    } else if (PyObject_IsInstance(symbolizer, (PyObject*) &RasterSymbolizerType)) {
+        MapnikRasterSymbolizer* oursymb = (MapnikRasterSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "add_symbolizer requires a symbolizer object");
     }
