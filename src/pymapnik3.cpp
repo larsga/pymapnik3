@@ -1,8 +1,4 @@
 
-// FIXME: need an exception type we can raise when things go to shit
-// FIXME: can pass wrong type objects without it being detected
-// FIXME: string parse errors, missing files etc must be detected
-
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <structmember.h>
@@ -235,7 +231,7 @@ LineSymbolizer_set_stroke(MapnikLineSymbolizer *self, PyObject *color)
 {
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_stroke requires a color object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikColor* ourcolor = (MapnikColor*) color;
@@ -315,12 +311,35 @@ TextSymbolizer_set_fill(MapnikTextSymbolizer *self, PyObject *color)
 {
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_fill requires a color object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->placements->defaults.format_defaults.fill = *ourcolor->color;
-    //self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::color&>(mapnik::keys::fill, *ourcolor->color));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+TextSymbolizer_set_halo_fill(MapnikTextSymbolizer *self, PyObject *color)
+{
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(PyExc_RuntimeError, "set_halo_fill requires a color object");
+        return NULL;
+    }
+    
+    MapnikColor* ourcolor = (MapnikColor*) color;
+    self->placements->defaults.format_defaults.halo_fill = *ourcolor->color;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+TextSymbolizer_set_halo_radius(MapnikTextSymbolizer *self, PyObject *args)
+{
+    double radius;
+    if (!PyArg_ParseTuple(args, "d", &radius))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.halo_radius = radius;
     return Py_BuildValue("");
 }
 
@@ -363,6 +382,12 @@ static PyMethodDef TextSymbolizer_methods[] = {
     },
     {"set_fill", (PyCFunction) TextSymbolizer_set_fill, METH_O,
      "Set fill color"
+    },
+    {"set_halo_fill", (PyCFunction) TextSymbolizer_set_halo_fill, METH_O,
+     "Set halo outline color"
+    },
+    {"set_halo_radius", (PyCFunction) TextSymbolizer_set_halo_radius, METH_VARARGS,
+     "Set halo outline width"
     },
     {"set_name_expression", (PyCFunction) TextSymbolizer_set_name_expression, METH_VARARGS,
      "Set expression to compute name of feature"
@@ -674,7 +699,7 @@ PolygonSymbolizer_set_fill(MapnikPolygonSymbolizer *self, PyObject *color)
 {
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_fill requires a color object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikColor* ourcolor = (MapnikColor*) color;
@@ -907,6 +932,11 @@ static PyMemberDef ProjTransform_members[] = {
 static PyObject *
 ProjTransform_forward(MapnikProjTransform *self, PyObject *box2d)
 {
+    if (!PyObject_IsInstance(box2d, (PyObject*) &BoxType)) {
+        PyErr_SetString(PyExc_RuntimeError, "forward requires a box object");
+        return NULL;
+    }
+    
     MapnikBox2d* ourbox2d = (MapnikBox2d*) box2d;
     mapnik::box2d<double> *box = ourbox2d->box;
 
@@ -1072,7 +1102,7 @@ RasterSymbolizer_set_colorizer(MapnikRasterSymbolizer *self, PyObject *arg)
 {
     if (!PyObject_IsInstance(arg, (PyObject*) &RasterColorizerType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_colorizer requires a RasterColorizer object");
-        return Py_BuildValue("");
+        return NULL;
     }
 
     MapnikRasterColorizer* colorizer = (MapnikRasterColorizer*) arg;
@@ -1163,6 +1193,7 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
         self->rule->append(*oursymb->symbolizer);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "add_symbolizer requires a symbolizer object");
+        return NULL;
     }
     return Py_BuildValue("");    
 }
@@ -1172,7 +1203,7 @@ Rule_set_filter(MapnikRule *self, PyObject *arg)
 {
     if (!PyObject_IsInstance(arg, (PyObject*) &ExpressionType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_filter requires an expression object");
-        return Py_BuildValue("");
+        return NULL;
     }
 
     MapnikExpression* expr = (MapnikExpression*) arg;
@@ -1288,7 +1319,12 @@ static PyMemberDef Style_members[] = {
 static PyObject *
 Style_add_rule(MapnikStyle *self, PyObject *rule)
 {
-    MapnikRule* ourrule = (MapnikRule*) rule; // FIXME
+    if (!PyObject_IsInstance(rule, (PyObject*) &RuleType)) {
+        PyErr_SetString(PyExc_RuntimeError, "add_rule requires a rule object");
+        return NULL;
+    }
+    
+    MapnikRule* ourrule = (MapnikRule*) rule;
     self->style->add_rule(mapnik::rule(*ourrule->rule));
     return Py_BuildValue("");
 }
@@ -1352,7 +1388,7 @@ MemoryDatasource_add_feature(MapnikMemoryDatasource *self, PyObject* args)
 
     if (!PyObject_IsInstance(obj, (PyObject*) &FeatureType)) {
         PyErr_SetString(PyExc_RuntimeError, "add_feature requires a feature object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikFeature *feature = (MapnikFeature*) obj;
@@ -1441,6 +1477,7 @@ Layer_set_datasource(MapnikLayer *self, PyObject *arg)
         self->layer->set_datasource(geojson->source);
     } else {
         PyErr_SetString(PyExc_RuntimeError, "set_datasource requires a datasource object");
+        return NULL;
     }
     return Py_BuildValue("");
 }
@@ -1548,7 +1585,7 @@ Map_add_layer(MapnikMap *self, PyObject* args)
 
     if (!PyObject_IsInstance(obj, (PyObject*) &LayerType)) {
         PyErr_SetString(PyExc_RuntimeError, "add_layer requires a layer object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikLayer *layer = (MapnikLayer *) obj;
@@ -1560,10 +1597,15 @@ static PyObject *
 Map_add_style(MapnikMap *self, PyObject* args)
 {
     char *c_name;
-    MapnikStyle *style; // FIXME
+    MapnikStyle *style;
     if (!PyArg_ParseTuple(args, "sO", &c_name, &style))
         return NULL;
 
+    if (!PyObject_IsInstance((PyObject*) style, (PyObject*) &StyleType)) {
+        PyErr_SetString(PyExc_RuntimeError, "add_style requires a style object");
+        return NULL;
+    }
+    
     self->map->insert_style(std::string(c_name), *style->style);
     return Py_BuildValue("");
 }
@@ -1573,7 +1615,7 @@ Map_set_background(MapnikMap *self, PyObject *color)
 {
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(PyExc_RuntimeError, "set_background requires a color object");
-        return Py_BuildValue("");
+        return NULL;
     }
     
     MapnikColor* ourcolor = (MapnikColor*) color;
@@ -1602,6 +1644,11 @@ Map_set_srs(MapnikMap *self, PyObject* args)
 static PyObject *
 Map_zoom_to_box(MapnikMap *self, PyObject *box)
 {
+    if (!PyObject_IsInstance(box, (PyObject*) &BoxType)) {
+        PyErr_SetString(PyExc_RuntimeError, "zoom_to_box requires a box object");
+        return NULL;
+    }
+    
     MapnikBox2d* ourbox = (MapnikBox2d*) box;
     self->map->zoom_to_box(*ourbox->box);
     return Py_BuildValue("");
@@ -1691,7 +1738,7 @@ mapnik_parse_from_geojson(PyObject *self, PyObject *args)
 
     if (!PyObject_IsInstance(c_ctx, (PyObject*) &ContextType)) {
         PyErr_SetString(PyExc_RuntimeError, "second argument to from_geojson must be context object");
-        return Py_BuildValue("");
+        return NULL;
     }
 
     MapnikContext* ctx = (MapnikContext*) c_ctx;

@@ -9,8 +9,21 @@ Currently in development and *not* ready for use.
 ## Goals
 
  * Easy, reliable build.
+ * No magic code -- all simple, straightforward, readable.
  * Support Mapnik 3.1.
  * Support Python 3, but not 2.
- * Similar API to python-mapnik, but more consistent.
+ * Similar API to python-mapnik.
  * Support what's needed by [fhdb](https://github.com/larsga/fhdb) 
-   *plus* `TextSymbolizer`.
+   *plus* `TextSymbolizer` and `ShieldSymbolizer`.
+
+## Outstanding work
+
+ * Font path is hard-coded. Solve by implementing `register_font`.
+ * Data source path is hard-coded. Solve by implementing `register_datasources`.
+ * `RasterColorizer` doesn't do anything.
+ * Implement `ShieldSymbolizer`.
+ * Need an exception type, and to raise it on errors.
+ * Need to detect mapnik exceptions and handle them.
+ * Build system needs to figure out whether or not to define `BIGINT`.
+ * `setup.py` has lots of hard-coded paths.
+ * Needs documentation to show how to use it.
