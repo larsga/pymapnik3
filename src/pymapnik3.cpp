@@ -279,6 +279,182 @@ static PyTypeObject LineSymbolizerType = {
 
 
 // ===========================================================================
+// SHIELD SYMBOLIZER
+
+typedef struct {
+    PyObject_HEAD
+    mapnik::shield_symbolizer* symbolizer;
+    mapnik::text_placements_ptr placements;
+} MapnikShieldSymbolizer;
+
+static void
+ShieldSymbolizer_dealloc(MapnikShieldSymbolizer *self)
+{
+    delete self->symbolizer;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static int
+ShieldSymbolizer_init(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    self->symbolizer = new mapnik::shield_symbolizer();
+    self->placements = std::make_shared<mapnik::text_placements_dummy>();
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::text_placements_ptr>(mapnik::keys::text_placements_, self->placements));
+
+    // this makes set_displacement only move text label
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, bool>(mapnik::keys::unlock_image, true));
+    return 0;
+}
+
+static PyMemberDef ShieldSymbolizer_members[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+ShieldSymbolizer_set_displacement(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    double x, y;
+    if (!PyArg_ParseTuple(args, "dd", &x, &y))
+        return NULL;
+
+    self->placements->defaults.layout_defaults.dx = x;
+    self->placements->defaults.layout_defaults.dy = y;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_fill(MapnikShieldSymbolizer *self, PyObject *color)
+{
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(MapnikError, "set_fill requires a color object");
+        return NULL;
+    }
+    
+    MapnikColor* ourcolor = (MapnikColor*) color;
+    self->placements->defaults.format_defaults.fill = *ourcolor->color;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_halo_fill(MapnikShieldSymbolizer *self, PyObject *color)
+{
+    if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
+        PyErr_SetString(MapnikError, "set_halo_fill requires a color object");
+        return NULL;
+    }
+    
+    MapnikColor* ourcolor = (MapnikColor*) color;
+    self->placements->defaults.format_defaults.halo_fill = *ourcolor->color;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_halo_radius(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    double radius;
+    if (!PyArg_ParseTuple(args, "d", &radius))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.halo_radius = radius;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_text_size(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    double size;
+    if (!PyArg_ParseTuple(args, "d", &size))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.text_size = size;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_face_name(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    char* name;
+    if (!PyArg_ParseTuple(args, "s", &name))
+        return NULL;
+    
+    self->placements->defaults.format_defaults.face_name = name;
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_file(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    char* c_file;
+    if (!PyArg_ParseTuple(args, "s", &c_file))
+        return NULL;
+    
+    self->symbolizer->properties.insert(std::pair<mapnik::keys, std::string>(mapnik::keys::file, std::string(c_file)));
+    return Py_BuildValue("");
+}
+
+static PyObject *
+ShieldSymbolizer_set_name_expression(MapnikShieldSymbolizer *self, PyObject *args)
+{
+    char* expr;
+    if (!PyArg_ParseTuple(args, "s", &expr))
+        return NULL;
+
+    try {
+        self->placements->defaults.set_format_tree(std::make_shared<mapnik::formatting::text_node>(mapnik::parse_expression(expr)));
+    } catch (std::exception e) {
+        // FIXME: we can't say what the error is, because config_error.what()
+        // doesn't get compiled into the mapnik library (??!?!)
+        PyErr_SetString(MapnikError, "parse error in expression");
+        return NULL;
+    }
+    
+    return Py_BuildValue("");
+}
+
+static PyMethodDef ShieldSymbolizer_methods[] = {
+    {"set_displacement", (PyCFunction) ShieldSymbolizer_set_displacement, METH_VARARGS,
+     "Set displacement of text relative to point"
+    },
+    {"set_face_name", (PyCFunction) ShieldSymbolizer_set_face_name, METH_VARARGS,
+     "Set text font name"
+    },
+    {"set_file", (PyCFunction) ShieldSymbolizer_set_file, METH_VARARGS,
+     "Set SVG file for icon"
+    },
+    {"set_fill", (PyCFunction) ShieldSymbolizer_set_fill, METH_O,
+     "Set fill color"
+    },
+    {"set_halo_fill", (PyCFunction) ShieldSymbolizer_set_halo_fill, METH_O,
+     "Set halo outline color"
+    },
+    {"set_halo_radius", (PyCFunction) ShieldSymbolizer_set_halo_radius, METH_VARARGS,
+     "Set halo outline width"
+    },
+    {"set_name_expression", (PyCFunction) ShieldSymbolizer_set_name_expression, METH_VARARGS,
+     "Set expression to compute name of feature"
+    },
+    {"set_text_size", (PyCFunction) ShieldSymbolizer_set_text_size, METH_VARARGS,
+     "Set text size"
+    },
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject ShieldSymbolizerType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pymapnik3.ShieldSymbolizer",
+    .tp_doc = PyDoc_STR("ShieldSymbolizer objects"),
+    .tp_basicsize = sizeof(MapnikShieldSymbolizer),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc) ShieldSymbolizer_init,
+    .tp_dealloc = (destructor) ShieldSymbolizer_dealloc,
+    .tp_members = ShieldSymbolizer_members,
+    .tp_methods = ShieldSymbolizer_methods,    
+};
+
+
+// ===========================================================================
 // TEXT SYMBOLIZER
 
 typedef struct {
@@ -1200,6 +1376,9 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
     } else if (PyObject_IsInstance(symbolizer, (PyObject*) &TextSymbolizerType)) {
         MapnikTextSymbolizer* oursymb = (MapnikTextSymbolizer*) symbolizer;
         self->rule->append(*oursymb->symbolizer);
+    } else if (PyObject_IsInstance(symbolizer, (PyObject*) &ShieldSymbolizerType)) {
+        MapnikShieldSymbolizer* oursymb = (MapnikShieldSymbolizer*) symbolizer;
+        self->rule->append(*oursymb->symbolizer);
     } else {
         PyErr_SetString(MapnikError, "add_symbolizer requires a symbolizer object");
         return NULL;
@@ -1878,6 +2057,8 @@ PyInit_pymapnik3(void)
         return NULL;
     if (PyType_Ready(&ShapefileType) < 0)
         return NULL;
+    if (PyType_Ready(&ShieldSymbolizerType) < 0)
+        return NULL;
     if (PyType_Ready(&StyleType) < 0)
         return NULL;
     if (PyType_Ready(&TextSymbolizerType) < 0)
@@ -2029,6 +2210,13 @@ PyInit_pymapnik3(void)
         return NULL;
     }
 
+    Py_INCREF(&ShieldSymbolizerType);
+    if (PyModule_AddObject(m, "ShieldSymbolizer", (PyObject *) &ShieldSymbolizerType) < 0) {
+        Py_DECREF(&ShieldSymbolizerType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
     Py_INCREF(&StyleType);
     if (PyModule_AddObject(m, "Style", (PyObject *) &StyleType) < 0) {
         Py_DECREF(&StyleType);
