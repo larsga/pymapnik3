@@ -770,9 +770,14 @@ Gdal_init(MapnikGdal *self, PyObject *args, PyObject *kwargs)
         params[std::string("base")] = std::string(base);
     if (file != NULL)
         params[std::string("file")] = std::string(file);
-    if (band != -1)
+    if (band != -1) {
+#ifdef BIGINT
         params[std::string("band")] = (long long) band;
-    
+#else
+        params[std::string("band")] = (int) band;
+#endif
+    }
+
     self->source = mapnik::datasource_cache::instance().create(params);
     return 0;
 }
