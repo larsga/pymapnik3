@@ -1134,10 +1134,11 @@ ProjTransform_forward(MapnikProjTransform *self, PyObject *box2d)
     // copy to work on that we'll return afterwards
     mapnik::box2d<double> copy = mapnik::box2d<double>(box->minx(), box->miny(), box->maxx(), box->maxy());
     if (!self->proj_transform->forward(copy)) {
-        std::cout << "OUCH OUCH OUCH" << std::endl; // FIXME
+      PyErr_SetString(MapnikError, "PROJ transform between projections failed.");
+      return NULL;
     }
 
-    PyObject* args = Py_BuildValue("(dddd)", copy.minx(), copy.miny(), copy.maxx(), copy.maxy());    
+    PyObject* args = Py_BuildValue("(dddd)", copy.minx(), copy.miny(), copy.maxx(), copy.maxy());
 
     return PyObject_CallObject((PyObject *)&BoxType, args);
 }
@@ -1936,9 +1937,9 @@ mapnik_parse_from_geojson(PyObject *self, PyObject *args)
 
     MapnikContext* ctx = (MapnikContext*) c_ctx;
     mapnik::feature_ptr feature(mapnik::feature_factory::create(ctx->context, 1));
-    if (!mapnik::json::from_geojson(std::string(c_json), *feature))
-    {
-        throw std::runtime_error("Failed to parse geojson feature");
+    if (!mapnik::json::from_geojson(std::string(c_json), *feature)) {
+        PyErr_SetString(MapnikError, "Failed to parse geojson feature");
+        return NULL;
     }
 
     PyObject *argList = Py_BuildValue("()");
