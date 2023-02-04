@@ -73,7 +73,7 @@ Box_init(MapnikBox2d *self, PyObject *args)
         return -1;
 
     self->box = new mapnik::box2d<double>(minx, miny, maxx, maxy);
-    
+
     return 0;
 }
 
@@ -128,7 +128,7 @@ static PyTypeObject BoxType = {
     .tp_init = (initproc) Box_init,
     .tp_dealloc = (destructor) Box_dealloc,
     .tp_members = Box_members,
-    .tp_methods = Box_methods,    
+    .tp_methods = Box_methods,
 };
 
 
@@ -151,7 +151,7 @@ static int
 Color_init(MapnikColor *self, PyObject *args)
 {
     int length = PySequence_Length(args);
-    
+
     if (length == 1) {
         const char *colorspec;
         if (!PyArg_ParseTuple(args, "s", &colorspec))
@@ -163,7 +163,7 @@ Color_init(MapnikColor *self, PyObject *args)
             return -1;
         self->color = new mapnik::color(r, g, b, t);
     }
-    
+
     return 0;
 }
 
@@ -199,7 +199,7 @@ static PyTypeObject ColorType = {
     .tp_init = (initproc) Color_init,
     .tp_dealloc = (destructor) Color_dealloc,
     .tp_members = Color_members,
-    .tp_methods = Color_methods,    
+    .tp_methods = Color_methods,
 };
 
 
@@ -221,7 +221,7 @@ LineSymbolizer_dealloc(MapnikLineSymbolizer *self)
 static int
 LineSymbolizer_init(MapnikLineSymbolizer *self, PyObject *args)
 {
-    self->symbolizer = new mapnik::line_symbolizer();   
+    self->symbolizer = new mapnik::line_symbolizer();
     return 0;
 }
 
@@ -236,7 +236,7 @@ LineSymbolizer_set_stroke(MapnikLineSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_stroke requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::color&>(mapnik::keys::stroke, *ourcolor->color));
     return Py_BuildValue("");
@@ -248,7 +248,7 @@ LineSymbolizer_set_stroke_width(MapnikLineSymbolizer *self, PyObject *args)
     double width;
     if (!PyArg_ParseTuple(args, "d", &width))
         return NULL;
-    
+
     self->symbolizer->properties.insert(std::pair<mapnik::keys, double>(mapnik::keys::stroke_width, width));
     return Py_BuildValue("");
 }
@@ -274,7 +274,7 @@ static PyTypeObject LineSymbolizerType = {
     .tp_init = (initproc) LineSymbolizer_init,
     .tp_dealloc = (destructor) LineSymbolizer_dealloc,
     .tp_members = LineSymbolizer_members,
-    .tp_methods = LineSymbolizer_methods,    
+    .tp_methods = LineSymbolizer_methods,
 };
 
 
@@ -329,7 +329,7 @@ ShieldSymbolizer_set_fill(MapnikShieldSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_fill requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->placements->defaults.format_defaults.fill = *ourcolor->color;
     return Py_BuildValue("");
@@ -342,7 +342,7 @@ ShieldSymbolizer_set_halo_fill(MapnikShieldSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_halo_fill requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->placements->defaults.format_defaults.halo_fill = *ourcolor->color;
     return Py_BuildValue("");
@@ -354,7 +354,7 @@ ShieldSymbolizer_set_halo_radius(MapnikShieldSymbolizer *self, PyObject *args)
     double radius;
     if (!PyArg_ParseTuple(args, "d", &radius))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.halo_radius = radius;
     return Py_BuildValue("");
 }
@@ -365,7 +365,7 @@ ShieldSymbolizer_set_text_size(MapnikShieldSymbolizer *self, PyObject *args)
     double size;
     if (!PyArg_ParseTuple(args, "d", &size))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.text_size = size;
     return Py_BuildValue("");
 }
@@ -376,7 +376,7 @@ ShieldSymbolizer_set_face_name(MapnikShieldSymbolizer *self, PyObject *args)
     char* name;
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.face_name = name;
     return Py_BuildValue("");
 }
@@ -387,7 +387,7 @@ ShieldSymbolizer_set_file(MapnikShieldSymbolizer *self, PyObject *args)
     char* c_file;
     if (!PyArg_ParseTuple(args, "s", &c_file))
         return NULL;
-    
+
     self->symbolizer->properties.insert(std::pair<mapnik::keys, std::string>(mapnik::keys::file, std::string(c_file)));
     return Py_BuildValue("");
 }
@@ -407,7 +407,7 @@ ShieldSymbolizer_set_name_expression(MapnikShieldSymbolizer *self, PyObject *arg
         PyErr_SetString(MapnikError, "parse error in expression");
         return NULL;
     }
-    
+
     return Py_BuildValue("");
 }
 
@@ -450,7 +450,7 @@ static PyTypeObject ShieldSymbolizerType = {
     .tp_init = (initproc) ShieldSymbolizer_init,
     .tp_dealloc = (destructor) ShieldSymbolizer_dealloc,
     .tp_members = ShieldSymbolizer_members,
-    .tp_methods = ShieldSymbolizer_methods,    
+    .tp_methods = ShieldSymbolizer_methods,
 };
 
 
@@ -490,7 +490,7 @@ TextSymbolizer_set_fill(MapnikTextSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_fill requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->placements->defaults.format_defaults.fill = *ourcolor->color;
     return Py_BuildValue("");
@@ -503,7 +503,7 @@ TextSymbolizer_set_halo_fill(MapnikTextSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_halo_fill requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->placements->defaults.format_defaults.halo_fill = *ourcolor->color;
     return Py_BuildValue("");
@@ -515,7 +515,7 @@ TextSymbolizer_set_halo_radius(MapnikTextSymbolizer *self, PyObject *args)
     double radius;
     if (!PyArg_ParseTuple(args, "d", &radius))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.halo_radius = radius;
     return Py_BuildValue("");
 }
@@ -526,7 +526,7 @@ TextSymbolizer_set_text_size(MapnikTextSymbolizer *self, PyObject *args)
     double size;
     if (!PyArg_ParseTuple(args, "d", &size))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.text_size = size;
     return Py_BuildValue("");
 }
@@ -537,7 +537,7 @@ TextSymbolizer_set_face_name(MapnikTextSymbolizer *self, PyObject *args)
     char* name;
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
-    
+
     self->placements->defaults.format_defaults.face_name = name;
     return Py_BuildValue("");
 }
@@ -557,7 +557,7 @@ TextSymbolizer_set_name_expression(MapnikTextSymbolizer *self, PyObject *args)
         PyErr_SetString(MapnikError, "parse error in expression");
         return NULL;
     }
-    
+
     return Py_BuildValue("");
 }
 
@@ -594,7 +594,7 @@ static PyTypeObject TextSymbolizerType = {
     .tp_init = (initproc) TextSymbolizer_init,
     .tp_dealloc = (destructor) TextSymbolizer_dealloc,
     .tp_members = TextSymbolizer_members,
-    .tp_methods = TextSymbolizer_methods,    
+    .tp_methods = TextSymbolizer_methods,
 };
 
 
@@ -615,7 +615,7 @@ Context_dealloc(MapnikContext *self)
 
 static int
 Context_init(MapnikContext *self, PyObject *args)
-{    
+{
     self->context = std::make_shared<mapnik::context_type>();
     return 0;
 }
@@ -639,7 +639,7 @@ static PyTypeObject ContextType = {
     .tp_init = (initproc) Context_init,
     .tp_dealloc = (destructor) Context_dealloc,
     .tp_members = Context_members,
-    .tp_methods = Context_methods,    
+    .tp_methods = Context_methods,
 };
 
 
@@ -663,7 +663,7 @@ Expression_init(MapnikExpression *self, PyObject *args)
     char* c_expr;
     if (!PyArg_ParseTuple(args, "s", &c_expr))
         return -1;
-    
+
     self->expression = mapnik::parse_expression(std::string(c_expr));
     return 0;
 }
@@ -687,7 +687,7 @@ static PyTypeObject ExpressionType = {
     .tp_init = (initproc) Expression_init,
     .tp_dealloc = (destructor) Expression_dealloc,
     .tp_members = Expression_members,
-    .tp_methods = Expression_methods,    
+    .tp_methods = Expression_methods,
 };
 
 
@@ -709,7 +709,7 @@ static int
 Feature_init(MapnikFeature *self, PyObject *args)
 {
     // make an empty pointer
-    self->feature = std::shared_ptr<mapnik::feature_impl>(); 
+    self->feature = std::shared_ptr<mapnik::feature_impl>();
     return 0;
 }
 
@@ -732,7 +732,7 @@ static PyTypeObject FeatureType = {
     .tp_init = (initproc) Feature_init,
     .tp_dealloc = (destructor) Feature_dealloc,
     .tp_members = Feature_members,
-    .tp_methods = Feature_methods,    
+    .tp_methods = Feature_methods,
 };
 
 
@@ -758,12 +758,12 @@ Gdal_init(MapnikGdal *self, PyObject *args, PyObject *kwargs)
     int band = -1;
 
     static char *kwlist[] = {"base", "file", "band", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist,
                                      &base, &file, &band))
     {
         return -1;
-    }    
-    
+    }
+
     mapnik::parameters params;
     params[std::string("type")] = std::string("gdal");
     if (base != NULL)
@@ -796,7 +796,7 @@ static PyTypeObject GdalType = {
     .tp_init = (initproc) Gdal_init,
     .tp_dealloc = (destructor) Gdal_dealloc,
     .tp_members = Gdal_members,
-    .tp_methods = Gdal_methods,    
+    .tp_methods = Gdal_methods,
 };
 
 
@@ -821,11 +821,11 @@ GeoJson_init(MapnikGeoJson *self, PyObject *args)
     char *filename;
     if (!PyArg_ParseTuple(args, "s", &filename))
         return -1;
-    
+
     mapnik::parameters params;
     params[std::string("file")] = std::string(filename);
     params[std::string("type")] = std::string("geojson");
-    
+
     self->source = mapnik::datasource_cache::instance().create(params);
     return 0;
 }
@@ -849,7 +849,7 @@ static PyTypeObject GeoJsonType = {
     .tp_init = (initproc) GeoJson_init,
     .tp_dealloc = (destructor) GeoJson_dealloc,
     .tp_members = GeoJson_members,
-    .tp_methods = GeoJson_methods,    
+    .tp_methods = GeoJson_methods,
 };
 
 
@@ -886,7 +886,7 @@ PolygonSymbolizer_set_fill(MapnikPolygonSymbolizer *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_fill requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::color&>(mapnik::keys::fill, *ourcolor->color));
     return Py_BuildValue("");
@@ -898,7 +898,7 @@ PolygonSymbolizer_set_fill_opacity(MapnikPolygonSymbolizer *self, PyObject *args
     double opacity;
     if (!PyArg_ParseTuple(args, "d", &opacity))
         return NULL;
-    
+
     self->symbolizer->properties.insert(std::pair<mapnik::keys, double>(mapnik::keys::fill_opacity, opacity));
     return Py_BuildValue("");
 }
@@ -924,7 +924,7 @@ static PyTypeObject PolygonSymbolizerType = {
     .tp_init = (initproc) PolygonSymbolizer_init,
     .tp_dealloc = (destructor) PolygonSymbolizer_dealloc,
     .tp_members = PolygonSymbolizer_members,
-    .tp_methods = PolygonSymbolizer_methods,    
+    .tp_methods = PolygonSymbolizer_methods,
 };
 
 
@@ -960,7 +960,7 @@ PointSymbolizer_set_file(MapnikPointSymbolizer *self, PyObject *args)
     char* c_file;
     if (!PyArg_ParseTuple(args, "s", &c_file))
         return NULL;
-    
+
     self->symbolizer->properties.insert(std::pair<mapnik::keys, std::string>(mapnik::keys::file, std::string(c_file)));
     return Py_BuildValue("");
 }
@@ -1013,7 +1013,7 @@ static PyTypeObject PointSymbolizerType = {
     .tp_init = (initproc) PointSymbolizer_init,
     .tp_dealloc = (destructor) PointSymbolizer_dealloc,
     .tp_members = PointSymbolizer_members,
-    .tp_methods = PointSymbolizer_methods,    
+    .tp_methods = PointSymbolizer_methods,
 };
 
 
@@ -1040,7 +1040,7 @@ Projection_init(MapnikProjection *self, PyObject *args)
         return -1;
 
     self->projection = new mapnik::projection(std::string(params), false);
-   
+
     return 0;
 }
 
@@ -1076,7 +1076,7 @@ static PyTypeObject ProjectionType = {
     .tp_init = (initproc) Projection_init,
     .tp_dealloc = (destructor) Projection_dealloc,
     .tp_members = Projection_members,
-    .tp_methods = Projection_methods,    
+    .tp_methods = Projection_methods,
 };
 
 
@@ -1106,7 +1106,7 @@ ProjTransform_init(MapnikProjTransform *self, PyObject *args)
         *source->projection,
         *dest->projection
     );
-    
+
     return 0;
 }
 
@@ -1121,7 +1121,7 @@ ProjTransform_forward(MapnikProjTransform *self, PyObject *box2d)
         PyErr_SetString(MapnikError, "forward requires a box object");
         return NULL;
     }
-    
+
     MapnikBox2d* ourbox2d = (MapnikBox2d*) box2d;
     mapnik::box2d<double> *box = ourbox2d->box;
 
@@ -1155,7 +1155,7 @@ static PyTypeObject ProjTransformType = {
     .tp_init = (initproc) ProjTransform_init,
     .tp_dealloc = (destructor) ProjTransform_dealloc,
     .tp_members = ProjTransform_members,
-    .tp_methods = ProjTransform_methods,    
+    .tp_methods = ProjTransform_methods,
 };
 
 
@@ -1200,13 +1200,13 @@ RasterColorizer_init(MapnikRasterColorizer *self, PyObject *args)
         return -1;
 
     mapnik::colorizer_mode_enum mmode = int_to_colorizer_mode(mode);
-    
+
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(MapnikError, "second argument must be a color object");
         return -1;
     }
     MapnikColor *mcolor = (MapnikColor*) color;
-    
+
     self->colorizer = new mapnik::raster_colorizer(mmode, *mcolor->color);
     return 0;
 }
@@ -1222,7 +1222,7 @@ RasterColorizer_add_stop(MapnikRasterColorizer *self, PyObject *args)
     PyObject *color;
     if (!PyArg_ParseTuple(args, "dO", &limit, &color))
         return NULL;
-   
+
     if (!PyObject_IsInstance(color, (PyObject*) &ColorType)) {
         PyErr_SetString(MapnikError, "second argument must be a color object");
         return NULL;
@@ -1230,7 +1230,7 @@ RasterColorizer_add_stop(MapnikRasterColorizer *self, PyObject *args)
     MapnikColor *mcolor = (MapnikColor*) color;
 
     self->colorizer->add_stop(mapnik::colorizer_stop(limit, mapnik::COLORIZER_INHERIT, *mcolor->color));
-    
+
     return Py_BuildValue("");
 }
 
@@ -1252,7 +1252,7 @@ static PyTypeObject RasterColorizerType = {
     .tp_init = (initproc) RasterColorizer_init,
     .tp_dealloc = (destructor) RasterColorizer_dealloc,
     .tp_members = RasterColorizer_members,
-    .tp_methods = RasterColorizer_methods,    
+    .tp_methods = RasterColorizer_methods,
 };
 
 
@@ -1328,7 +1328,7 @@ static PyTypeObject RasterSymbolizerType = {
     .tp_init = (initproc) RasterSymbolizer_init,
     .tp_dealloc = (destructor) RasterSymbolizer_dealloc,
     .tp_members = RasterSymbolizer_members,
-    .tp_methods = RasterSymbolizer_methods,    
+    .tp_methods = RasterSymbolizer_methods,
 };
 
 
@@ -1383,7 +1383,7 @@ Rule_add_symbolizer(MapnikRule *self, PyObject *symbolizer)
         PyErr_SetString(MapnikError, "add_symbolizer requires a symbolizer object");
         return NULL;
     }
-    return Py_BuildValue("");    
+    return Py_BuildValue("");
 }
 
 static PyObject *
@@ -1396,7 +1396,7 @@ Rule_set_filter(MapnikRule *self, PyObject *arg)
 
     MapnikExpression* expr = (MapnikExpression*) arg;
     self->rule->set_filter(expr->expression);
-    
+
     return Py_BuildValue("");
 }
 
@@ -1421,7 +1421,7 @@ static PyTypeObject RuleType = {
     .tp_init = (initproc) Rule_init,
     .tp_dealloc = (destructor) Rule_dealloc,
     .tp_members = Rule_members,
-    .tp_methods = Rule_methods,    
+    .tp_methods = Rule_methods,
 };
 
 
@@ -1446,11 +1446,11 @@ Shapefile_init(MapnikShapefile *self, PyObject *args)
     char *filename;
     if (!PyArg_ParseTuple(args, "s", &filename))
         return -1;
-    
+
     mapnik::parameters params;
     params[std::string("file")] = std::string(filename);
     params[std::string("type")] = std::string("shape");
-    
+
     self->source = mapnik::datasource_cache::instance().create(params);
     return 0;
 }
@@ -1474,7 +1474,7 @@ static PyTypeObject ShapefileType = {
     .tp_init = (initproc) Shapefile_init,
     .tp_dealloc = (destructor) Shapefile_dealloc,
     .tp_members = Shapefile_members,
-    .tp_methods = Shapefile_methods,    
+    .tp_methods = Shapefile_methods,
 };
 
 
@@ -1511,7 +1511,7 @@ Style_add_rule(MapnikStyle *self, PyObject *rule)
         PyErr_SetString(MapnikError, "add_rule requires a rule object");
         return NULL;
     }
-    
+
     MapnikRule* ourrule = (MapnikRule*) rule;
     self->style->add_rule(mapnik::rule(*ourrule->rule));
     return Py_BuildValue("");
@@ -1535,7 +1535,7 @@ static PyTypeObject StyleType = {
     .tp_init = (initproc) Style_init,
     .tp_dealloc = (destructor) Style_dealloc,
     .tp_members = Style_members,
-    .tp_methods = Style_methods,    
+    .tp_methods = Style_methods,
 };
 
 
@@ -1558,7 +1558,7 @@ MemoryDatasource_init(MapnikMemoryDatasource *self, PyObject *args)
 {
     mapnik::parameters params;
     params[std::string("type")] = std::string("memory");
-    
+
     self->source = std::make_shared<mapnik::memory_datasource>(params);
     return 0;
 }
@@ -1578,7 +1578,7 @@ MemoryDatasource_add_feature(MapnikMemoryDatasource *self, PyObject* args)
         PyErr_SetString(MapnikError, "add_feature requires a feature object");
         return NULL;
     }
-    
+
     MapnikFeature *feature = (MapnikFeature*) obj;
     self->source->push(feature->feature);
     return Py_BuildValue("");
@@ -1602,7 +1602,7 @@ static PyTypeObject MemoryDatasourceType = {
     .tp_init = (initproc) MemoryDatasource_init,
     .tp_dealloc = (destructor) MemoryDatasource_dealloc,
     .tp_members = MemoryDatasource_members,
-    .tp_methods = MemoryDatasource_methods,    
+    .tp_methods = MemoryDatasource_methods,
 };
 
 
@@ -1629,7 +1629,7 @@ Layer_init(MapnikLayer *self, PyObject *args)
         return -1;
 
     self->layer = new mapnik::layer(std::string(name));
-    
+
     return 0;
 }
 
@@ -1729,7 +1729,7 @@ static PyTypeObject LayerType = {
     .tp_init = (initproc) Layer_init,
     .tp_dealloc = (destructor) Layer_dealloc,
     .tp_members = Layer_members,
-    .tp_methods = Layer_methods,    
+    .tp_methods = Layer_methods,
 };
 
 
@@ -1756,7 +1756,7 @@ Map_init(MapnikMap *self, PyObject *args)
         return -1;
 
     self->map = new mapnik::Map(width, height);
-    
+
     return 0;
 }
 
@@ -1775,7 +1775,7 @@ Map_add_layer(MapnikMap *self, PyObject* args)
         PyErr_SetString(MapnikError, "add_layer requires a layer object");
         return NULL;
     }
-    
+
     MapnikLayer *layer = (MapnikLayer *) obj;
     self->map->add_layer(*layer->layer);
     return Py_BuildValue("");
@@ -1793,7 +1793,7 @@ Map_add_style(MapnikMap *self, PyObject* args)
         PyErr_SetString(MapnikError, "add_style requires a style object");
         return NULL;
     }
-    
+
     self->map->insert_style(std::string(c_name), *style->style);
     return Py_BuildValue("");
 }
@@ -1805,7 +1805,7 @@ Map_set_background(MapnikMap *self, PyObject *color)
         PyErr_SetString(MapnikError, "set_background requires a color object");
         return NULL;
     }
-    
+
     MapnikColor* ourcolor = (MapnikColor*) color;
     self->map->set_background(*ourcolor->color);
     return Py_BuildValue("");
@@ -1836,7 +1836,7 @@ Map_zoom_to_box(MapnikMap *self, PyObject *box)
         PyErr_SetString(MapnikError, "zoom_to_box requires a box object");
         return NULL;
     }
-    
+
     MapnikBox2d* ourbox = (MapnikBox2d*) box;
     self->map->zoom_to_box(*ourbox->box);
     return Py_BuildValue("");
@@ -1875,7 +1875,7 @@ static PyTypeObject MapType = {
     .tp_init = (initproc) Map_init,
     .tp_dealloc = (destructor) Map_dealloc,
     .tp_members = Map_members,
-    .tp_methods = Map_methods,    
+    .tp_methods = Map_methods,
 };
 
 
@@ -1939,7 +1939,7 @@ mapnik_parse_from_geojson(PyObject *self, PyObject *args)
     PyObject *argList = Py_BuildValue("()");
     MapnikFeature* featureobj = (MapnikFeature*) PyObject_CallObject((PyObject *) &FeatureType, argList);
     Py_DECREF(argList);
-    
+
     featureobj->feature = feature;
     PyObject* pyfeature = (PyObject*) featureobj;
     return Py_BuildValue("O", pyfeature);
@@ -1986,7 +1986,7 @@ mapnik_render_to_file(PyObject *self, PyObject *args)
     mapnik::image_any image = mapnik::image_rgba8(themap->map->width(), themap->map->height());
     render(*themap->map, image, 1.0, 0, 0);
     mapnik::save_to_file(image, std::string(filename), std::string(format));
-    
+
     return Py_BuildValue("");
 }
 
@@ -2018,7 +2018,7 @@ PyMODINIT_FUNC
 PyInit_pymapnik3(void)
 {
     PyObject *m;
-   
+
     if (PyType_Ready(&BoxType) < 0)
         return NULL;
     if (PyType_Ready(&ColorType) < 0)
@@ -2076,28 +2076,28 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&BoxType);
     if (PyModule_AddObject(m, "Box2d", (PyObject *) &BoxType) < 0) {
         Py_DECREF(&BoxType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&ColorType);
     if (PyModule_AddObject(m, "Color", (PyObject *) &ColorType) < 0) {
         Py_DECREF(&ColorType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&ContextType);
     if (PyModule_AddObject(m, "Context", (PyObject *) &ContextType) < 0) {
         Py_DECREF(&ContextType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&ExpressionType);
     if (PyModule_AddObject(m, "Expression", (PyObject *) &ExpressionType) < 0) {
         Py_DECREF(&ExpressionType);
@@ -2125,7 +2125,7 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&LayerType);
     if (PyModule_AddObject(m, "Layer", (PyObject *) &LayerType) < 0) {
         Py_DECREF(&LayerType);
@@ -2153,28 +2153,28 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&PointSymbolizerType);
     if (PyModule_AddObject(m, "PointSymbolizer", (PyObject *) &PointSymbolizerType) < 0) {
         Py_DECREF(&PointSymbolizerType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&PolygonSymbolizerType);
     if (PyModule_AddObject(m, "PolygonSymbolizer", (PyObject *) &PolygonSymbolizerType) < 0) {
         Py_DECREF(&PolygonSymbolizerType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&ProjectionType);
     if (PyModule_AddObject(m, "Projection", (PyObject *) &ProjectionType) < 0) {
         Py_DECREF(&ProjectionType);
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&ProjTransformType);
     if (PyModule_AddObject(m, "ProjTransform", (PyObject *) &ProjTransformType) < 0) {
         Py_DECREF(&ProjTransformType);
@@ -2188,7 +2188,7 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&RasterSymbolizerType);
     if (PyModule_AddObject(m, "RasterSymbolizer", (PyObject *) &RasterSymbolizerType) < 0) {
         Py_DECREF(&RasterSymbolizerType);
@@ -2216,7 +2216,7 @@ PyInit_pymapnik3(void)
         Py_DECREF(m);
         return NULL;
     }
-    
+
     Py_INCREF(&StyleType);
     if (PyModule_AddObject(m, "Style", (PyObject *) &StyleType) < 0) {
         Py_DECREF(&StyleType);
@@ -2243,6 +2243,6 @@ PyInit_pymapnik3(void)
     if (PyModule_AddIntConstant(m, "COLORIZER_EXACT", 3)) {
         return NULL;
     }
-    
+
     return m;
 }
