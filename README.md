@@ -13,7 +13,7 @@ Currently in development and *not* ready for use. Contributions welcome.
  * Support Mapnik 3.1.
  * Support Python 3, but not 2.
  * Similar API to [python-mapnik](https://github.com/mapnik/python-mapnik).
- * Support what's needed by [fhdb](https://github.com/larsga/fhdb) 
+ * Support what's needed by [fhdb](https://github.com/larsga/fhdb)
    *plus* `TextSymbolizer` and `ShieldSymbolizer`.
 
 ## Outstanding work
@@ -24,3 +24,7 @@ Currently in development and *not* ready for use. Contributions welcome.
  * `setup.py` has lots of hard-coded paths.
  * Needs documentation to show how to use the bindings.
  * Implement CSV data source.
+
+## How to build
+
+`pip3 install .`

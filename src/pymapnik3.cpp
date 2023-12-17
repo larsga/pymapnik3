@@ -1888,40 +1888,6 @@ static PyTypeObject MapType = {
 // ===========================================================================
 // FUNCTIONS
 
-struct agg_renderer_visitor_1
-{
-    agg_renderer_visitor_1(mapnik::Map const& m, double scale_factor, unsigned offset_x, unsigned offset_y)
-        : m_(m), scale_factor_(scale_factor), offset_x_(offset_x), offset_y_(offset_y) {}
-
-    template <typename T>
-    void operator() (T & pixmap)
-    {
-        throw std::runtime_error("This image type is not currently supported for rendering.");
-    }
-
-  private:
-    mapnik::Map const& m_;
-    double scale_factor_;
-    unsigned offset_x_;
-    unsigned offset_y_;
-};
-
-template <>
-void agg_renderer_visitor_1::operator()<mapnik::image_rgba8> (mapnik::image_rgba8 & pixmap)
-{
-    mapnik::agg_renderer<mapnik::image_rgba8> ren(m_, pixmap, scale_factor_, offset_x_, offset_y_);
-    ren.apply();
-}
-
-void render(mapnik::Map const& map,
-            mapnik::image_any& image,
-            double scale_factor = 1.0,
-            unsigned offset_x = 0u,
-            unsigned offset_y = 0u)
-{
-    mapnik::util::apply_visitor(agg_renderer_visitor_1(map, scale_factor, offset_x, offset_y), image);
-}
-
 static PyObject *
 mapnik_parse_from_geojson(PyObject *self, PyObject *args)
 {
@@ -1989,8 +1955,11 @@ mapnik_render_to_file(PyObject *self, PyObject *args)
     }
 #endif
 
-    mapnik::image_any image = mapnik::image_rgba8(themap->map->width(), themap->map->height());
-    render(*themap->map, image, 1.0, 0, 0);
+    mapnik::image_rgba8 image = mapnik::image_rgba8(themap->map->width(), themap->map->height());
+
+    mapnik::agg_renderer<mapnik::image_rgba8> ren(*themap->map, image);
+    ren.apply();
+
     mapnik::save_to_file(image, std::string(filename), std::string(format));
 
     return Py_BuildValue("");
