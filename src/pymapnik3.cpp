@@ -1949,7 +1949,7 @@ mapnik_render_to_file(PyObject *self, PyObject *args)
         return NULL;
 
 #ifdef HAVE_CAIRO
-    if (!strcmp(format, "SVG")) {
+    if (!strcmp(format, "svg") || !strcmp(format, "pdf")) {
         mapnik::save_to_cairo_file(*themap->map, std::string(filename), std::string(format), 1.0);
         return Py_BuildValue("");
     }

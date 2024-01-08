@@ -18,7 +18,8 @@ module1 = Extension(
     extra_compile_args = [
         '-std=c++14', '-Wno-unused-variable', '-stdlib=libc++',
         '-DBIGINT', # mapnik is compiled with this, so we must be, too
-    ],    
+        '-DHAVE_CAIRO', # can't just hardcode this ...
+    ],
 )
 
 setup(
