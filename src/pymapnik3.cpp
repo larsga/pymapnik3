@@ -156,7 +156,12 @@ Color_init(MapnikColor *self, PyObject *args)
         const char *colorspec;
         if (!PyArg_ParseTuple(args, "s", &colorspec))
             return -1;
-        self->color = new mapnik::color(std::string(colorspec));
+        try {
+          self->color = new mapnik::color(std::string(colorspec));
+        } catch (const std::exception& ex) {
+          PyErr_SetString(MapnikError, ex.what());
+          return 0;
+        }
     } else if (length == 3 || length == 4) {
         unsigned char r, g, b, t = 0;
         if (!PyArg_ParseTuple(args, "bbb|b", &r, &g, &b, &t))
