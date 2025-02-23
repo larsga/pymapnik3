@@ -258,12 +258,28 @@ LineSymbolizer_set_stroke_width(MapnikLineSymbolizer *self, PyObject *args)
     return Py_BuildValue("");
 }
 
+static PyObject *
+LineSymbolizer_set_stroke_dash(MapnikLineSymbolizer *self, PyObject *args)
+{
+   double length;
+   double gap;
+   if (!PyArg_ParseTuple(args, "dd", &length, &gap))
+       return NULL;
+
+   mapnik::dash_array da = { std::make_pair(length, gap) };
+   self->symbolizer->properties.insert(std::pair<mapnik::keys, mapnik::dash_array>(mapnik::keys::stroke_dasharray, da));
+   return Py_BuildValue("");
+}
+
 static PyMethodDef LineSymbolizer_methods[] = {
     {"set_stroke", (PyCFunction) LineSymbolizer_set_stroke, METH_O,
      "Set stroke color"
     },
     {"set_stroke_width", (PyCFunction) LineSymbolizer_set_stroke_width, METH_VARARGS,
      "Set stroke width"
+    },
+    {"set_stroke_dash", (PyCFunction) LineSymbolizer_set_stroke_dash, METH_VARARGS,
+     "Set stroke dash"
     },
     {NULL}  /* Sentinel */
 };
