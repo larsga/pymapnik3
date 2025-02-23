@@ -2224,5 +2224,27 @@ PyInit_pymapnik3(void)
         return NULL;
     }
 
+    // register data sources and fonts
+    std::string mapnik_dir = std::string(MAPNIK_BIN_DIR);
+
+    std::string input_dir = mapnik_dir + "input/";
+    mapnik::datasource_cache::instance().register_datasources(input_dir);
+
+    std::string font_glob = mapnik_dir + "fonts/*.ttf";
+    char font_glob_c[font_glob.size()];
+    strcpy(font_glob_c, font_glob.c_str());
+
+    PyObject* mod_name = PyUnicode_FromString((char*) "glob");
+    PyObject* glob_module = PyImport_Import(mod_name);
+    PyObject* glob_func = PyObject_GetAttrString(glob_module, (char*)"glob");
+    PyObject* args = PyTuple_Pack(1, PyUnicode_FromString((char*) font_glob_c));
+
+    PyObject* file_list = PyObject_CallObject(glob_func, args);
+    for (Py_ssize_t ix = 0; ix < PyList_Size(file_list); ix++) {
+      PyObject* filename = PyList_GetItem(file_list, ix);
+      const char* filename_c = PyUnicode_AsUTF8(filename);
+      mapnik::freetype_engine::register_font(filename_c);
+    }
+
     return m;
 }
